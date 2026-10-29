@@ -12,6 +12,8 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
   const [monthFilter, setMonthFilter] = useState('all'); // 'all', '08', '09', '10', '11', '12'
   const [sortBy, setSortBy] = useState('filled_desc'); // 'filled_desc' (padrão), 'date_desc', 'date_asc', 'earnings_desc', 'earnings_asc'
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
   const filteredAndSortedEntries = useMemo(() => {
     // 1. Filtragem
     const filtered = entries.filter(entry => {
@@ -23,10 +25,10 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
 
       if (!matchesSearch) return false;
 
-      // Filtro de status
-      const isFilled = entry.netEarnings !== null && entry.netEarnings !== undefined;
-      if (statusFilter === 'filled' && !isFilled) return false;
-      if (statusFilter === 'pending' && isFilled) return false;
+      // Filtro de status: Realizado considera preenchidos até o dia de hoje
+      const isPastFilled = entry.netEarnings !== null && entry.netEarnings !== undefined && entry.date <= todayStr;
+      if (statusFilter === 'filled' && !isPastFilled) return false;
+      if (statusFilter === 'pending' && isPastFilled) return false;
 
       // Filtro de mês
       if (monthFilter !== 'all') {
@@ -39,17 +41,18 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
 
     // 2. Ordenação
     return [...filtered].sort((a, b) => {
-      const aFilled = a.netEarnings !== null && a.netEarnings !== undefined;
-      const bFilled = b.netEarnings !== null && b.netEarnings !== undefined;
+      const isPastFilled = (e) => e.netEarnings !== null && e.netEarnings !== undefined && e.date <= todayStr;
+      const aPast = isPastFilled(a);
+      const bPast = isPastFilled(b);
       const aVal = Number(a.netEarnings) || 0;
       const bVal = Number(b.netEarnings) || 0;
 
       switch (sortBy) {
         case 'filled_desc':
-          // Padrão: Dias preenchidos primeiro (do mais recente para o mais antigo), seguidos pelos pendentes
-          if (aFilled && !bFilled) return -1;
-          if (!aFilled && bFilled) return 1;
-          if (aFilled && bFilled) return b.date.localeCompare(a.date);
+          // Padrão: Dias preenchidos até hoje primeiro (do mais novo para o mais antigo), seguidos pelos dias futuros
+          if (aPast && !bPast) return -1;
+          if (!aPast && bPast) return 1;
+          if (aPast && bPast) return b.date.localeCompare(a.date);
           return a.date.localeCompare(b.date);
 
         case 'date_desc':
@@ -62,21 +65,21 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
 
         case 'earnings_desc':
           // Maior ganho primeiro
-          if (aFilled && !bFilled) return -1;
-          if (!aFilled && bFilled) return 1;
+          if (aPast && !bPast) return -1;
+          if (!aPast && bPast) return 1;
           return bVal - aVal;
 
         case 'earnings_asc':
           // Menor ganho primeiro
-          if (aFilled && !bFilled) return -1;
-          if (!aFilled && bFilled) return 1;
+          if (aPast && !bPast) return -1;
+          if (!aPast && bPast) return 1;
           return aVal - bVal;
 
         default:
           return b.date.localeCompare(a.date);
       }
     });
-  }, [entries, searchTerm, statusFilter, monthFilter, sortBy]);
+  }, [entries, searchTerm, statusFilter, monthFilter, sortBy, todayStr]);
 
   // Total acumulado dos filtrados
   const sumFiltered = filteredAndSortedEntries
@@ -162,7 +165,7 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full bg-[#161e31] border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
               >
-                <option value="filled_desc">Últimos Preenchidos (Padrão)</option>
+                <option value="filled_desc">Últimos Preenchidos até Hoje (Padrão)</option>
                 <option value="date_desc">Data Mais Recente (Nova → Antiga)</option>
                 <option value="date_asc">Data Mais Antiga (Cronológica)</option>
                 <option value="earnings_desc">Maior Ganho Líquido (R$)</option>
