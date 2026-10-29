@@ -4,13 +4,11 @@ import {
   PlusCircle, Sun, Moon 
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
-import { formatCurrency } from '../utils/calculations';
 
 export default function Header({ 
   activeTab, 
   setActiveTab, 
-  onOpenNewEntry, 
-  monthlyProjectedNetProfit
+  onOpenNewEntry
 }) {
   const { resolvedTheme, toggleTheme } = useTheme();
 
@@ -91,15 +89,8 @@ export default function Header({
             </button>
           </nav>
 
-          {/* Quick Projection Pill, Theme Toggle & Action Button */}
+          {/* Theme Toggle & Action Button */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-[#161e31] border border-slate-200 dark:border-slate-800">
-              <span className="text-[11px] text-slate-500 dark:text-slate-400">Projeção:</span>
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mono-numbers">
-                {formatCurrency(monthlyProjectedNetProfit)}/mês
-              </span>
-            </div>
-
             {/* Botão de Alternar Modo Claro / Escuro */}
             <button
               type="button"

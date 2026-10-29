@@ -189,7 +189,6 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onOpenNewEntry={handleOpenNewEntry}
-        monthlyProjectedNetProfit={metrics.monthlyProjectedNetProfit}
       />
 
       {/* Conteúdo Principal com base na aba ativa */}
