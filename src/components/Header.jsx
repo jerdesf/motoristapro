@@ -4,6 +4,7 @@ import {
   PlusCircle, Sun, Moon 
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
+import AppLogo from './AppLogo';
 
 export default function Header({ 
   activeTab, 
@@ -17,12 +18,8 @@ export default function Header({
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo & Brand */}
-          <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 p-0.5 shadow-md shadow-emerald-500/20">
-              <div className="w-full h-full bg-slate-50 dark:bg-[#111726] rounded-[14px] flex items-center justify-center">
-                <span className="text-xl">🚗</span>
-              </div>
-            </div>
+          <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none" onClick={() => setActiveTab('dashboard')}>
+            <AppLogo className="w-10 h-10 sm:w-11 sm:h-11 transition-transform active:scale-95" />
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-black text-slate-900 dark:text-white text-base sm:text-lg tracking-tight">Motorista<span className="text-emerald-500">PRO</span></span>

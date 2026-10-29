@@ -1,18 +1,130 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#10b981" />
-      <stop offset="100%" stop-color="#059669" />
+    <!-- Background Gradient: Apple Deep Space Black / Midnight Obsidian -->
+    <linearGradient id="appleBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#151C2C" />
+      <stop offset="45%" stop-color="#0B0F19" />
+      <stop offset="100%" stop-color="#030712" />
     </linearGradient>
+
+    <!-- Radial Emerald Ambient Core Glow -->
+    <radialGradient id="appleGlow" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.32" />
+      <stop offset="50%" stop-color="#059669" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#030712" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Apple Vibrant Emerald / Mint Linear Gradient -->
+    <linearGradient id="appleMint" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#047857" />
+      <stop offset="30%" stop-color="#10B981" />
+      <stop offset="70%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#A7F3D0" />
+    </linearGradient>
+
+    <!-- Specular Bevel Border (Subtle Apple Glass Rim) -->
+    <linearGradient id="appleBevel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.35" />
+      <stop offset="30%" stop-color="#FFFFFF" stop-opacity="0.10" />
+      <stop offset="70%" stop-color="#1E293B" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#0F172A" stop-opacity="0.6" />
+    </linearGradient>
+
+    <!-- Chrome Metallic Accent -->
+    <linearGradient id="appleChrome" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="45%" stop-color="#F1F5F9" />
+      <stop offset="100%" stop-color="#94A3B8" />
+    </linearGradient>
+
+    <!-- Shadow filter for icon depth -->
+    <filter id="iconDepth" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.55" />
+      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#10B981" flood-opacity="0.3" />
+    </filter>
   </defs>
-  <rect width="100" height="100" rx="24" fill="#111726"/>
-  <rect x="4" y="4" width="92" height="92" rx="20" fill="none" stroke="url(#grad)" stroke-width="3" stroke-opacity="0.6"/>
-  <!-- Car icon with dollar -->
-  <path d="M28 62 L32 46 C33.5 41 37.5 37 43 37 L57 37 C62.5 37 66.5 41 68 46 L72 62" fill="none" stroke="#10b981" stroke-width="4" stroke-linecap="round"/>
-  <path d="M22 62 L78 62 C81 62 83 64 83 67 L83 72 C83 75 81 77 78 77 L75 77 C75 82 71 86 66 86 C61 86 57 82 57 77 L43 77 C43 82 39 86 34 86 C29 86 25 82 25 77 L22 77 C19 77 17 75 17 72 L17 67 C17 64 19 62 22 62 Z" fill="#1e293b" stroke="#34d399" stroke-width="3.5"/>
-  <circle cx="34" cy="74" r="5" fill="#10b981"/>
-  <circle cx="66" cy="74" r="5" fill="#10b981"/>
-  <circle cx="26" cy="67" r="2.5" fill="#fbbf24"/>
-  <circle cx="74" cy="67" r="2.5" fill="#ef4444"/>
-  <text x="50" y="30" font-family="system-ui, sans-serif" font-weight="900" font-size="20" fill="#34d399" text-anchor="middle">R$</text>
+
+  <!-- Apple iOS Squircle Base (512x512, rx=116) -->
+  <rect width="512" height="512" rx="116" fill="url(#appleBg)" />
+  <rect width="512" height="512" rx="116" fill="url(#appleGlow)" />
+  <rect x="2" y="2" width="508" height="508" rx="114" fill="none" stroke="url(#appleBevel)" stroke-width="3" />
+
+  <!-- Main Graphic Group with Apple Drop Shadow -->
+  <g filter="url(#iconDepth)">
+    <!-- 1. Glowing Dynamic Speed & Revenue Track Arc -->
+    <path 
+      d="M 120 330 A 155 155 0 1 1 392 330" 
+      fill="none" 
+      stroke="url(#appleMint)" 
+      stroke-width="18" 
+      stroke-linecap="round"
+      stroke-dasharray="380 40"
+    />
+
+    <!-- Tick marks for automotive gauge aesthetic -->
+    <circle cx="120" cy="330" r="7" fill="#10B981" />
+    <circle cx="392" cy="330" r="7" fill="#34D399" />
+    <circle cx="256" cy="101" r="5" fill="#A7F3D0" />
+
+    <!-- 2. Sleek Aerodynamic Apple Car Silhouette (Precision vector) -->
+    <!-- Car Cabin Roofline -->
+    <path 
+      d="M 176 270 
+         C 188 238, 208 214, 240 210 
+         L 272 210 
+         C 304 214, 324 238, 336 270 
+         Z" 
+      fill="#0F172A" 
+      stroke="url(#appleChrome)" 
+      stroke-width="7" 
+      stroke-linejoin="round"
+    />
+    
+    <!-- Windshield Reflection -->
+    <path 
+      d="M 194 266 
+         C 204 245, 218 226, 244 223 
+         L 268 223 
+         C 294 226, 308 245, 318 266 
+         Z" 
+      fill="url(#appleMint)" 
+      opacity="0.3" 
+    />
+
+    <!-- Car Body Lower Chassis & Hood -->
+    <path 
+      d="M 152 284 
+         C 142 284, 136 292, 136 304 
+         L 136 320 
+         C 136 328, 142 334, 150 334 
+         L 164 334 
+         C 168 334, 172 328, 172 320 
+         L 340 320 
+         C 340 328, 344 334, 348 334 
+         L 362 334 
+         C 370 334, 376 328, 376 320 
+         L 376 304 
+         C 376 292, 370 284, 360 284 
+         L 344 280 
+         C 334 274, 326 270, 316 270 
+         L 196 270 
+         C 186 270, 178 274, 168 280 
+         Z" 
+      fill="url(#appleChrome)" 
+      stroke="#FFFFFF" 
+      stroke-width="3"
+      stroke-linejoin="round"
+    />
+
+    <!-- Futuristic LED Headlights (Neon Mint) -->
+    <path d="M 154 298 L 186 296" stroke="#34D399" stroke-width="6" stroke-linecap="round" />
+    <path d="M 358 298 L 326 296" stroke="#34D399" stroke-width="6" stroke-linecap="round" />
+
+    <!-- Center Badge Accent (Apple-like illuminated pill) -->
+    <rect x="246" y="294" width="20" height="7" rx="3.5" fill="#10B981" />
+
+    <!-- Lower Ground Accent / Speed lines -->
+    <path d="M 190 354 L 322 354" stroke="#10B981" stroke-width="4" stroke-linecap="round" opacity="0.6" />
+    <path d="M 218 368 L 294 368" stroke="#059669" stroke-width="3.5" stroke-linecap="round" opacity="0.4" />
+  </g>
 </svg>
