@@ -20,11 +20,14 @@
     <script>
       (function() {
         try {
-          // Limpa chave antiga genérica se existir
+          // Limpa chaves permanentes de versões anteriores
           localStorage.removeItem('theme');
-          var stored = localStorage.getItem('motoristapro_theme');
+          localStorage.removeItem('motoristapro_theme');
+          
+          // Se todas as abas foram fechadas, sessionStorage é nulo -> volta automaticamente para o tema do sistema
+          var sessionTheme = sessionStorage.getItem('motoristapro_session_theme');
           var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-          var isDark = stored === 'dark' || ((!stored || stored === 'system') && systemDark);
+          var isDark = sessionTheme === 'dark' || ((!sessionTheme || sessionTheme === 'system') && systemDark);
           if (isDark) {
             document.documentElement.classList.add('dark');
           } else {
