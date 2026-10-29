@@ -8,18 +8,11 @@ import Settings from './components/Settings';
 import EntryModal from './components/EntryModal';
 import { INITIAL_ENTRIES, INITIAL_SETTINGS } from './data/initialData';
 import { calculateMetrics, getDayNameBR } from './utils/calculations';
-import { 
-  fetchCloudEntries, 
-  syncEntryToCloud, 
-  fetchCloudSettings, 
-  syncSettingsToCloud, 
-  seedCloudDataIfEmpty, 
-  subscribeToRealtime 
-} from './services/syncService';
-import { getSupabaseClient, getSupabaseCredentials } from './services/supabase';
+import { fetchFromCloud, saveToCloud } from './services/cloudStorage';
 
 const STORAGE_KEY_ENTRIES = 'motoristapro_entries_v1';
 const STORAGE_KEY_SETTINGS = 'motoristapro_settings_v1';
+const STORAGE_KEY_TIMESTAMP = 'motoristapro_last_modified';
 
 export default function App() {
   // Inicialização com localStorage ou dados importados da planilha
@@ -54,85 +47,58 @@ export default function App() {
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   
-  // Status de sincronização com a nuvem: 'local' | 'connecting' | 'synced' | 'error'
-  const [cloudStatus, setCloudStatus] = useState(() => {
+  // Status de sincronização com a nuvem Vercel KV / Redis: 'synced' | 'syncing' | 'local' | 'offline'
+  const [cloudStatus, setCloudStatus] = useState('synced');
+
+  // Sincronização ultra-rápida via API /api/data (Vercel KV / Upstash Redis)
+  const syncWithCloud = useCallback(async () => {
     try {
-      const creds = getSupabaseCredentials();
-      return (creds && creds.url && creds.key) ? 'connecting' : 'local';
-    } catch (e) {
-      return 'local';
-    }
-  });
+      setCloudStatus('syncing');
+      const cloudData = await fetchFromCloud();
 
-  const isCloudConnected = cloudStatus === 'synced';
+      if (cloudData && cloudData.entries && Array.isArray(cloudData.entries)) {
+        const localTime = Number(localStorage.getItem(STORAGE_KEY_TIMESTAMP) || 0);
+        const cloudTime = cloudData.lastModified || 0;
 
-  // Sincronização inicial com o Supabase
-  const initCloudSync = useCallback(async () => {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setCloudStatus('local');
-      return false;
-    }
-
-    setCloudStatus('connecting');
-
-    try {
-      // 1. Tenta buscar da nuvem
-      const cloudEntries = await fetchCloudEntries();
-      if (cloudEntries && cloudEntries.length > 0) {
+        // Se a nuvem tiver dados mais recentes ou equivalentes
+        if (cloudTime >= localTime) {
+          setEntries(cloudData.entries);
+          if (cloudData.settings) setSettings(cloudData.settings);
+          localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(cloudData.entries));
+          if (cloudData.settings) localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(cloudData.settings));
+          localStorage.setItem(STORAGE_KEY_TIMESTAMP, String(cloudTime));
+        } else {
+          // Se o dispositivo local tiver alterações offline mais recentes, envia para a nuvem
+          await saveToCloud(entries, settings);
+        }
         setCloudStatus('synced');
-        setEntries(cloudEntries);
-        localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(cloudEntries));
       } else {
-        // Se a tabela estiver vazia, popula com os dados iniciais
-        await seedCloudDataIfEmpty(entries, settings);
-        setCloudStatus('synced');
+        // Se a nuvem estiver vazia, popula imediatamente com os dados locais
+        const saved = await saveToCloud(entries, settings);
+        setCloudStatus(saved ? 'synced' : 'local');
       }
-
-      // 2. Busca configurações da nuvem
-      const cloudSettings = await fetchCloudSettings();
-      if (cloudSettings) {
-        setSettings(prev => ({ ...prev, ...cloudSettings }));
-      }
-
-      return true;
     } catch (e) {
-      console.error('Falha na inicialização do Supabase:', e);
-      setCloudStatus('error');
-      return false;
+      console.warn('Sincronização em background indisponível:', e);
+      setCloudStatus('local');
     }
   }, [entries, settings]);
 
+  // Executa na carga inicial
   useEffect(() => {
-    initCloudSync();
+    syncWithCloud();
   }, []);
 
-  // Escuta alterações em tempo real do Supabase
+  // Sincronização automática ao focar na janela ou periodicamente a cada 20s
   useEffect(() => {
-    if (cloudStatus !== 'synced') return;
-
-    const channel = subscribeToRealtime(
-      (updatedEntry) => {
-        setEntries(prev => {
-          const index = prev.findIndex(e => e.date === updatedEntry.date);
-          if (index >= 0) {
-            const copy = [...prev];
-            copy[index] = { ...copy[index], ...updatedEntry };
-            return copy;
-          } else {
-            return [...prev, updatedEntry].sort((a, b) => a.date.localeCompare(b.date));
-          }
-        });
-      },
-      (updatedSettings) => {
-        setSettings(prev => ({ ...prev, ...updatedSettings }));
-      }
-    );
+    const handleFocus = () => syncWithCloud();
+    window.addEventListener('focus', handleFocus);
+    const interval = setInterval(syncWithCloud, 20000);
 
     return () => {
-      if (channel) channel.unsubscribe();
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
     };
-  }, [isCloudConnected]);
+  }, [syncWithCloud]);
 
   // Salvar no localStorage sempre que entries ou settings mudarem
   useEffect(() => {
@@ -172,33 +138,31 @@ export default function App() {
 
   // Salvar ou atualizar lançamento (local + nuvem)
   const handleSaveEntry = (entryData) => {
+    let updatedEntries;
     setEntries(prevEntries => {
       const index = prevEntries.findIndex(e => e.date === entryData.date);
       if (index >= 0) {
-        const updated = [...prevEntries];
-        updated[index] = {
-          ...updated[index],
+        updatedEntries = [...prevEntries];
+        updatedEntries[index] = {
+          ...updatedEntries[index],
           ...entryData,
         };
-        return updated;
       } else {
-        const newEntries = [...prevEntries, entryData];
-        return newEntries.sort((a, b) => a.date.localeCompare(b.date));
+        updatedEntries = [...prevEntries, entryData].sort((a, b) => a.date.localeCompare(b.date));
       }
+      return updatedEntries;
     });
 
-    // Envia assincronamente para a nuvem
-    if (isCloudConnected) {
-      syncEntryToCloud(entryData);
+    // Envia assincronamente para a nuvem Vercel KV / Redis
+    if (updatedEntries) {
+      saveToCloud(updatedEntries, settings);
     }
   };
 
   // Salvar configurações (local + nuvem)
   const handleSaveSettings = (newSettings) => {
     setSettings(newSettings);
-    if (isCloudConnected) {
-      syncSettingsToCloud(newSettings);
-    }
+    saveToCloud(entries, newSettings);
   };
 
   // Restaurar dados originais da planilha
@@ -263,8 +227,8 @@ export default function App() {
             onResetToDefault={handleResetToDefault}
             allEntries={entries}
             onImportBackup={handleImportBackup}
-            isCloudConnected={isCloudConnected}
-            onRefreshCloudConnection={initCloudSync}
+            isCloudConnected={cloudStatus === 'synced'}
+            onRefreshCloudConnection={syncWithCloud}
           />
         )}
       </main>
