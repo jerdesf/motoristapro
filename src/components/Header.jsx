@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   TrendingUp, Calendar, ListFilter, Settings, 
-  PlusCircle, Sun, Moon 
+  PlusCircle, Sun, Moon, CloudCheck, CloudSync, CloudOff 
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import AppLogo from './AppLogo';
@@ -9,7 +9,8 @@ import AppLogo from './AppLogo';
 export default function Header({ 
   activeTab, 
   setActiveTab, 
-  onOpenNewEntry
+  onOpenNewEntry,
+  cloudStatus = 'synced'
 }) {
   const { resolvedTheme, toggleTheme } = useTheme();
 
@@ -17,16 +18,34 @@ export default function Header({
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0a0d14]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
-          {/* Logo & Brand */}
-          <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none" onClick={() => setActiveTab('dashboard')}>
-            <AppLogo className="w-10 h-10 sm:w-11 sm:h-11 transition-transform active:scale-95" />
+          {/* Logo & Brand (Sem clique para dashboard, sem rótulo AUTO, com status da nuvem idêntico ao financas) */}
+          <div className="flex items-center gap-2.5 sm:gap-3 select-none">
+            <AppLogo className="w-10 h-10 sm:w-11 sm:h-11" />
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-black text-slate-900 dark:text-white text-base sm:text-lg tracking-tight">Motorista<span className="text-emerald-500">PRO</span></span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  AUTO
-                </span>
-              </div>
+              <h1 className="font-black text-slate-900 dark:text-white text-base sm:text-lg tracking-tight flex items-center gap-2">
+                <span>Motorista<span className="text-emerald-500">PRO</span></span>
+
+                {cloudStatus === 'syncing' && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20" title="Sincronizando com a nuvem...">
+                    <CloudSync size={12} className="animate-spin" />
+                    <span className="hidden sm:inline">Nuvem...</span>
+                  </span>
+                )}
+
+                {cloudStatus === 'synced' && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20" title="Sincronizado na nuvem em tempo real">
+                    <CloudCheck size={12} />
+                    <span className="hidden sm:inline">Nuvem ativa</span>
+                  </span>
+                )}
+
+                {cloudStatus === 'offline' && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 bg-slate-500/10 px-2 py-0.5 rounded-full border border-slate-500/20" title="Modo local (salvo no dispositivo)">
+                    <CloudOff size={12} />
+                    <span className="hidden sm:inline">Local</span>
+                  </span>
+                )}
+              </h1>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">Controle de Ganhos & Projeções</p>
             </div>
           </div>

@@ -189,6 +189,7 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onOpenNewEntry={handleOpenNewEntry}
+        cloudStatus={cloudStatus}
       />
 
       {/* Conteúdo Principal com base na aba ativa */}
