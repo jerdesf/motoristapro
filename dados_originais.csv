@@ -1,0 +1,180 @@
+Controle de ganhos — motorista de aplicativo,,,,,,,
+,,,,,,,
+"Ganho projetado até 31/12/2026, baseado no histórico e no calendário de trabalho.",,,,,,,
+,,,,,,,
+CUSTOS E PERÍODO,,,Preço do combustível,3.69,,GANHOS REALIZADOS,
+Custos fixos por 30 dias,2727.1428571428569,,faturamento,276.39,,Ganho líquido,18261.76
+Custo diário do carro,88.571428571428569,,km rodado,140.1,,Custos,6636.0476190476184
+Lavagem + celular por dia,2.333333333333333,,consumo médio (km/l),8.5,,Lucro líquido acumulado,11625.71238095238
+Fim de semana (% do dia útil),0.35,,combustível,-64.020928792569663,,Lucro mensal projetado,4504.2475078206426
+Início do período,2026-08-17,,% gasto c/ comb.,0.23163258002304593,,,
+Último dia considerado,2026-10-28,,Ganho líquido,212.36907120743032,,,
+Fim da projeção,2026-12-31,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+COMO O GANHO POR 30 DIAS É CALCULADO,,,,,,,
+"O desempenho já realizado estima os ganhos dos períodos ainda vazios, até 31/12.",,,,,,,
+"Dia útil: 1; meio dia: 0,5; sábado e domingo: metade do peso do fim de semana cada; feriado: 0.",,,,,,,
+A projeção desconta custos de todos os 137 dias e converte o resultado para 30 dias.,,,,,,,
+,,,,,,,
+COMO PREENCHER,,,,,,,
+"Na aba Lançamentos, preencha a coluna E com o valor já descontado do combustível.",,,,,,,
+Digite 0 para registrar um dia encerrado sem ganhos. Deixe os dias futuros vazios.,,,,,,,
+Sábado e domingo têm linhas próprias. Registre em cada uma apenas o ganho daquele dia.,,,,,,,
+A média realizada usa os dias até o último lançamento. A projeção inclui o calendário restante.,,,,,,,
+Não há metas. A projeção supõe o mesmo ganho por dia equivalente de trabalho já registrado.,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+Períodos preenchidos,71,,,,,,
+Lançamentos diários,,,,
+Preencha E após descontar combustível. Registre os valores de sábado e domingo separadamente.,,,,
+,,,,
+Data,Dia,Tipo,Peso de trabalho,Realizado após combustível
+2026-08-17,Segunda-feira,Dia útil,1,340.45
+2026-08-18,Terça-feira,Dia útil,1,338.47
+2026-08-19,Quarta-feira,Dia útil,1,352.48
+2026-08-20,Quinta-feira,Dia útil,1,307.67
+2026-08-21,Sexta-feira,Dia útil,1,282.43
+2026-08-22,Sábado,Final de semana,0.175,62.230000000000004
+2026-08-23,Domingo,Final de semana,0.175,62.230000000000004
+2026-08-24,Segunda-feira,Dia útil,1,311.68
+2026-08-25,Terça-feira,Dia útil,1,386.89
+2026-08-26,Quarta-feira,Dia útil,1,321.91999999999996
+2026-08-27,Quinta-feira,Dia útil,1,388.13
+2026-08-28,Sexta-feira,Dia útil,1,411.3
+2026-08-29,Sábado,Final de semana,0.175,98.065
+2026-08-30,Domingo,Final de semana,0.175,98.065
+2026-08-31,Segunda-feira,Dia útil,1,436.91
+2026-09-01,Terça-feira,Dia útil,1,381.81
+2026-09-02,Quarta-feira,Dia útil,1,363.96
+2026-09-03,Quinta-feira,Dia útil,1,367.71
+2026-09-04,Sexta-feira,Dia útil,1,434.09
+2026-09-05,Sábado,Final de semana,0.175,75.19
+2026-09-06,Domingo,Final de semana,0.175,75.19
+2026-09-07,Segunda-feira,Feriado,0,
+2026-09-08,Terça-feira,Dia útil,1,347.88
+2026-09-09,Quarta-feira,Dia útil,1,356
+2026-09-10,Quinta-feira,Dia útil,1,307.77
+2026-09-11,Sexta-feira,Dia útil,1,429.56999999999994
+2026-09-12,Sábado,Final de semana,0.175,55.78
+2026-09-13,Domingo,Final de semana,0.175,55.78
+2026-09-14,Segunda-feira,Dia útil,1,363.85
+2026-09-15,Terça-feira,Dia útil,1,306.23
+2026-09-16,Quarta-feira,Dia útil,1,366.75
+2026-09-17,Quinta-feira,Dia útil,1,306.78
+2026-09-18,Sexta-feira,Dia útil,1,401.07
+2026-09-19,Sábado,Final de semana,0.175,85.16
+2026-09-20,Domingo,Final de semana,0.175,85.16
+2026-09-21,Segunda-feira,Dia útil,1,320.43
+2026-09-22,Terça-feira,Dia útil,1,321.72
+2026-09-23,Quarta-feira,Dia útil,1,308.4
+2026-09-24,Quinta-feira,Dia útil,1,330.23999999999995
+2026-09-25,Sexta-feira,Meio dia,0.5,249
+2026-09-26,Sábado,Final de semana,0.175,91.345
+2026-09-27,Domingo,Final de semana,0.175,91.345
+2026-09-28,Segunda-feira,Dia útil,1,338
+2026-09-29,Terça-feira,Dia útil,1,300.53
+2026-09-30,Quarta-feira,Dia útil,1,339
+2026-10-01,Quinta-feira,Dia útil,1,347
+2026-10-02,Sexta-feira,Dia útil,1,321
+2026-10-03,Sábado,Final de semana,0.175,75.77
+2026-10-04,Domingo,Final de semana,0.175,75.77
+2026-10-05,Segunda-feira,Dia útil,1,372
+2026-10-06,Terça-feira,Dia útil,1,348
+2026-10-07,Quarta-feira,Dia útil,1,377
+2026-10-08,Quinta-feira,Dia útil,1,346
+2026-10-09,Sexta-feira,Dia útil,1,436.74
+2026-10-10,Sábado,Final de semana,0.175,71
+2026-10-11,Domingo,Final de semana,0.175,71
+2026-10-12,Segunda-feira,Feriado,0,
+2026-10-13,Terça-feira,Dia útil,1,264.61
+2026-10-14,Quarta-feira,Dia útil,1,354
+2026-10-15,Quinta-feira,Dia útil,1,218
+2026-10-16,Sexta-feira,Dia útil,1,256
+2026-10-17,Sábado,Final de semana,0.175,93.61
+2026-10-18,Domingo,Final de semana,0.175,93.61
+2026-10-19,Segunda-feira,Dia útil,1,289.24
+2026-10-20,Terça-feira,Dia útil,1,294
+2026-10-21,Quarta-feira,Dia útil,1,200
+2026-10-22,Quinta-feira,Dia útil,1,235
+2026-10-23,Sexta-feira,Dia útil,1,214.34
+2026-10-24,Sábado,Final de semana,0.175,110.33500000000001
+2026-10-25,Domingo,Final de semana,0.175,110.33500000000001
+2026-10-26,Segunda-feira,Dia útil,1,255.22999999999996
+2026-10-27,Terça-feira,Dia útil,1,165.14
+2026-10-28,Quarta-feira,Dia útil,1,212.37
+2026-10-29,Quinta-feira,Dia útil,1,
+2026-10-30,Sexta-feira,Dia útil,1,
+2026-10-31,Sábado,Final de semana,0.175,
+2026-11-01,Domingo,Final de semana,0.175,
+2026-11-02,Segunda-feira,Feriado,0,
+2026-11-03,Terça-feira,Dia útil,1,
+2026-11-04,Quarta-feira,Dia útil,1,
+2026-11-05,Quinta-feira,Dia útil,1,
+2026-11-06,Sexta-feira,Dia útil,1,
+2026-11-07,Sábado,Final de semana,0.175,
+2026-11-08,Domingo,Final de semana,0.175,
+2026-11-09,Segunda-feira,Dia útil,1,
+2026-11-10,Terça-feira,Dia útil,1,
+2026-11-11,Quarta-feira,Dia útil,1,
+2026-11-12,Quinta-feira,Dia útil,1,
+2026-11-13,Sexta-feira,Dia útil,1,
+2026-11-14,Sábado,Final de semana,0.175,
+2026-11-15,Domingo,Final de semana,0.175,
+2026-11-16,Segunda-feira,Dia útil,1,
+2026-11-17,Terça-feira,Dia útil,1,
+2026-11-18,Quarta-feira,Dia útil,1,
+2026-11-19,Quinta-feira,Dia útil,1,
+2026-11-20,Sexta-feira,Feriado,0,
+2026-11-21,Sábado,Final de semana,0.175,
+2026-11-22,Domingo,Final de semana,0.175,
+2026-11-23,Segunda-feira,Dia útil,1,
+2026-11-24,Terça-feira,Dia útil,1,
+2026-11-25,Quarta-feira,Dia útil,1,
+2026-11-26,Quinta-feira,Dia útil,1,
+2026-11-27,Sexta-feira,Dia útil,1,
+2026-11-28,Sábado,Final de semana,0.175,
+2026-11-29,Domingo,Final de semana,0.175,
+2026-11-30,Segunda-feira,Dia útil,1,
+2026-12-01,Terça-feira,Dia útil,1,
+2026-12-02,Quarta-feira,Dia útil,1,
+2026-12-03,Quinta-feira,Dia útil,1,
+2026-12-04,Sexta-feira,Dia útil,1,
+2026-12-05,Sábado,Final de semana,0.175,
+2026-12-06,Domingo,Final de semana,0.175,
+2026-12-07,Segunda-feira,Meio dia,0.5,
+2026-12-08,Terça-feira,Feriado,0,
+2026-12-09,Quarta-feira,Dia útil,1,
+2026-12-10,Quinta-feira,Dia útil,1,
+2026-12-11,Sexta-feira,Dia útil,1,
+2026-12-12,Sábado,Final de semana,0.175,
+2026-12-13,Domingo,Final de semana,0.175,
+2026-12-14,Segunda-feira,Dia útil,1,
+2026-12-15,Terça-feira,Dia útil,1,
+2026-12-16,Quarta-feira,Dia útil,1,
+2026-12-17,Quinta-feira,Dia útil,1,
+2026-12-18,Sexta-feira,Dia útil,1,
+2026-12-19,Sábado,Final de semana,0.175,
+2026-12-20,Domingo,Final de semana,0.175,
+2026-12-21,Segunda-feira,Dia útil,1,
+2026-12-22,Terça-feira,Dia útil,1,
+2026-12-23,Quarta-feira,Dia útil,1,
+2026-12-24,Quinta-feira,Meio dia,0.5,
+2026-12-25,Sexta-feira,Feriado,0,
+2026-12-26,Sábado,Final de semana,0.175,
+2026-12-27,Domingo,Final de semana,0.175,
+2026-12-28,Segunda-feira,Dia útil,1,
+2026-12-29,Terça-feira,Dia útil,1,
+2026-12-30,Quarta-feira,Dia útil,1,
+2026-12-31,Quinta-feira,Meio dia,0.5,

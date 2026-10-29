@@ -1,0 +1,17 @@
+{
+  "name": "MotoristaPRO — Controle de Ganhos",
+  "short_name": "MotoristaPRO",
+  "description": "Controle financeiro e projeção de lucros para motoristas de aplicativo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0d14",
+  "theme_color": "#0a0d14",
+  "icons": [
+    {
+      "src": "/car-icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

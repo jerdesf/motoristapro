@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="24" fill="#111726"/>
+  <rect x="4" y="4" width="92" height="92" rx="20" fill="none" stroke="url(#grad)" stroke-width="3" stroke-opacity="0.6"/>
+  <!-- Car icon with dollar -->
+  <path d="M28 62 L32 46 C33.5 41 37.5 37 43 37 L57 37 C62.5 37 66.5 41 68 46 L72 62" fill="none" stroke="#10b981" stroke-width="4" stroke-linecap="round"/>
+  <path d="M22 62 L78 62 C81 62 83 64 83 67 L83 72 C83 75 81 77 78 77 L75 77 C75 82 71 86 66 86 C61 86 57 82 57 77 L43 77 C43 82 39 86 34 86 C29 86 25 82 25 77 L22 77 C19 77 17 75 17 72 L17 67 C17 64 19 62 22 62 Z" fill="#1e293b" stroke="#34d399" stroke-width="3.5"/>
+  <circle cx="34" cy="74" r="5" fill="#10b981"/>
+  <circle cx="66" cy="74" r="5" fill="#10b981"/>
+  <circle cx="26" cy="67" r="2.5" fill="#fbbf24"/>
+  <circle cx="74" cy="67" r="2.5" fill="#ef4444"/>
+  <text x="50" y="30" font-family="system-ui, sans-serif" font-weight="900" font-size="20" fill="#34d399" text-anchor="middle">R$</text>
+</svg>
