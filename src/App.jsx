@@ -16,7 +16,7 @@ import {
   seedCloudDataIfEmpty, 
   subscribeToRealtime 
 } from './services/syncService';
-import { getSupabaseClient } from './services/supabase';
+import { getSupabaseClient, getSupabaseCredentials } from './services/supabase';
 
 const STORAGE_KEY_ENTRIES = 'motoristapro_entries_v1';
 const STORAGE_KEY_SETTINGS = 'motoristapro_settings_v1';
@@ -56,8 +56,12 @@ export default function App() {
   
   // Status de sincronização com a nuvem: 'local' | 'connecting' | 'synced' | 'error'
   const [cloudStatus, setCloudStatus] = useState(() => {
-    const creds = getSupabaseCredentials();
-    return (creds.url && creds.key) ? 'connecting' : 'local';
+    try {
+      const creds = getSupabaseCredentials();
+      return (creds && creds.url && creds.key) ? 'connecting' : 'local';
+    } catch (e) {
+      return 'local';
+    }
   });
 
   // Sincronização inicial com o Supabase
