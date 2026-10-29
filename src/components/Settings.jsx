@@ -26,7 +26,6 @@ export default function Settings({
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const handleChange = (field, value) => {
-    // Permite digitar dígitos, vírgula e ponto
     const cleaned = value.replace(/[^0-9.,]/g, '');
     setFormData(prev => ({
       ...prev,
@@ -95,38 +94,38 @@ export default function Settings({
   const cost30Days = dailyTotal * 30;
 
   return (
-    <div className="space-y-6 pb-12 max-w-4xl mx-auto">
+    <div className="space-y-5 sm:space-y-6 pb-12 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="bg-[#111726] border border-slate-800 rounded-2xl p-5 shadow-xl flex items-center justify-between">
+      <div className="bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm dark:shadow-xl flex items-center justify-between transition-colors duration-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
             <SettingsIcon className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="font-bold text-white text-lg">Configurações & Parâmetros</h2>
-            <p className="text-xs text-slate-400">Ajuste seus custos diários, metas e combustível padrão</p>
+            <h2 className="font-bold text-slate-900 dark:text-white text-base sm:text-lg">Configurações & Parâmetros</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Ajuste seus custos diários e combustível padrão</p>
           </div>
         </div>
 
         {savedSuccess && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-400 text-xs font-bold animate-fadeIn">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold animate-fadeIn">
             <Check className="w-4 h-4" />
             Salvo com Sucesso!
           </div>
         )}
       </div>
 
-      <form onSubmit={handleSave} className="space-y-6">
+      <form onSubmit={handleSave} className="space-y-5 sm:space-y-6">
         {/* Bloco 1: Custos Fixos do Veículo */}
-        <div className="bg-[#111726] border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-            <Car className="w-5 h-5 text-emerald-400" />
-            <h3 className="font-bold text-white text-base">Custos Fixos do Veículo</h3>
+        <div className="bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-xl space-y-4 transition-colors duration-200">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <Car className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Custos Fixos do Veículo</h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Custo Diário do Carro (R$/dia)
               </label>
               <div className="relative">
@@ -136,16 +135,16 @@ export default function Settings({
                   inputMode="decimal"
                   value={formData.carDailyCost}
                   onChange={(e) => handleChange('carDailyCost', e.target.value)}
-                  className="w-full bg-[#161e31] border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
                 />
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                 Equivale a R$ 620,00/semana de aluguel ou parcela
               </p>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Lavagem + Celular Diário (R$/dia)
               </label>
               <div className="relative">
@@ -155,34 +154,34 @@ export default function Settings({
                   inputMode="decimal"
                   value={formData.extraDailyCost}
                   onChange={(e) => handleChange('extraDailyCost', e.target.value)}
-                  className="w-full bg-[#161e31] border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
                 />
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                 Equivale a R$ 70,00 por mês (R$ 2,33/dia)
               </p>
             </div>
           </div>
 
           {/* Resumo do custo fixo por 30 dias */}
-          <div className="p-3.5 bg-[#161e31] rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <span className="text-xs text-slate-400">Total de custos fixos por 30 dias:</span>
-            <div className="text-base font-bold text-rose-400 mono-numbers">
-              {formatCurrency(cost30Days)} <span className="text-xs font-normal text-slate-400">({formatCurrency(dailyTotal)}/dia)</span>
+          <div className="p-3.5 bg-slate-50 dark:bg-[#161e31] rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <span className="text-xs text-slate-600 dark:text-slate-400">Total de custos fixos por 30 dias:</span>
+            <div className="text-base font-bold text-rose-600 dark:text-rose-400 mono-numbers">
+              {formatCurrency(cost30Days)} <span className="text-xs font-normal text-slate-500 dark:text-slate-400">({formatCurrency(dailyTotal)}/dia)</span>
             </div>
           </div>
         </div>
 
         {/* Bloco 2: Combustível Padrão */}
-        <div className="bg-[#111726] border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-            <Fuel className="w-5 h-5 text-amber-400" />
-            <h3 className="font-bold text-white text-base">Parâmetros de Combustível Padrão</h3>
+        <div className="bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-xl space-y-4 transition-colors duration-200">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <Fuel className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Parâmetros de Combustível Padrão</h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Preço Padrão do Combustível (R$/litro)
               </label>
               <div className="relative">
@@ -192,13 +191,13 @@ export default function Settings({
                   inputMode="decimal"
                   value={formData.fuelPrice}
                   onChange={(e) => handleChange('fuelPrice', e.target.value)}
-                  className="w-full bg-[#161e31] border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Consumo Médio do Carro (km/litro)
               </label>
               <div className="relative">
@@ -208,7 +207,7 @@ export default function Settings({
                   inputMode="decimal"
                   value={formData.fuelEfficiency}
                   onChange={(e) => handleChange('fuelEfficiency', e.target.value)}
-                  className="w-full bg-[#161e31] border border-slate-700 rounded-xl px-3 py-2.5 text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
                 />
               </div>
             </div>
@@ -216,39 +215,39 @@ export default function Settings({
         </div>
 
         {/* Bloco 3: Calendário e Pesos de Trabalho */}
-        <div className="bg-[#111726] border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
-          <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-            <Calendar className="w-5 h-5 text-purple-400" />
-            <h3 className="font-bold text-white text-base">Período da Projeção & Pesos</h3>
+        <div className="bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-xl space-y-4 transition-colors duration-200">
+          <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Período da Projeção & Pesos</h3>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Início da Projeção
               </label>
               <input
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => handleChange('startDate', e.target.value)}
-                className="w-full bg-[#161e31] border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:border-emerald-500 focus:outline-none"
+                className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white text-xs focus:border-emerald-500 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Fim da Projeção
               </label>
               <input
                 type="date"
                 value={formData.endDate}
                 onChange={(e) => handleChange('endDate', e.target.value)}
-                className="w-full bg-[#161e31] border border-slate-700 rounded-xl px-3 py-2 text-white text-xs focus:border-emerald-500 focus:outline-none"
+                className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white text-xs focus:border-emerald-500 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-300 block mb-1">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
                 Fim de Semana (% do dia útil)
               </label>
               <input
@@ -256,9 +255,9 @@ export default function Settings({
                 inputMode="decimal"
                 value={formData.weekendRatio}
                 onChange={(e) => handleChange('weekendRatio', e.target.value)}
-                className="w-full bg-[#161e31] border border-slate-700 rounded-xl px-3 py-2 text-white text-xs font-semibold mono-numbers focus:border-emerald-500 focus:outline-none"
+                className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white text-xs font-semibold mono-numbers focus:border-emerald-500 focus:outline-none"
               />
-              <p className="text-[10px] text-slate-400 mt-1">
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
                 0,35 ou 0.35 (0,175 sáb e 0,175 dom)
               </p>
             </div>
@@ -269,7 +268,7 @@ export default function Settings({
         <div className="flex justify-end">
           <button
             type="submit"
-            className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition-all active:scale-95"
+            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95"
           >
             <Save className="w-4 h-4" />
             Salvar Configurações
@@ -278,28 +277,28 @@ export default function Settings({
       </form>
 
       {/* Bloco 4: Backup, Exportação e Restauração */}
-      <div className="bg-[#111726] border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-4">
-        <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-          <ShieldCheck className="w-5 h-5 text-teal-400" />
-          <h3 className="font-bold text-white text-base">Segurança dos Seus Dados & Backup</h3>
+      <div className="bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-xl space-y-4 transition-colors duration-200">
+        <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <ShieldCheck className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+          <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Segurança dos Seus Dados & Backup</h3>
         </div>
 
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-600 dark:text-slate-400">
           Todos os seus lançamentos e configurações ficam salvos no armazenamento local deste navegador. Para não perder nada ao trocar de celular ou computador, baixe uma cópia de segurança.
         </p>
 
-        <div className="flex flex-wrap items-center gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 pt-2">
           <button
             type="button"
             onClick={handleExportJSON}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-2 border border-slate-700 transition-colors"
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-semibold flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 transition-colors"
           >
-            <Download className="w-4 h-4 text-emerald-400" />
+            <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             Baixar Backup Completo (.JSON)
           </button>
 
-          <label className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-2 border border-slate-700 transition-colors cursor-pointer">
-            <Upload className="w-4 h-4 text-blue-400" />
+          <label className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white text-xs font-semibold flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer">
+            <Upload className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             Restaurar de Backup
             <input
               type="file"
@@ -312,12 +311,12 @@ export default function Settings({
           <button
             type="button"
             onClick={() => {
-              if (confirm('Deseja recarregar os 71 dias originais da sua planilha? Todas as alterações manuais serão resetadas.')) {
+              if (confirm('Deseja recarregar os dados originais da sua planilha? Todas as alterações manuais serão resetadas.')) {
                 onResetToDefault();
                 alert('Planilha original restaurada com sucesso!');
               }
             }}
-            className="px-4 py-2.5 rounded-xl bg-rose-950/30 hover:bg-rose-900/40 text-rose-300 text-xs font-semibold flex items-center gap-2 border border-rose-800/40 transition-colors"
+            className="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center justify-center gap-2 border border-rose-200 dark:border-rose-800/40 transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
             Restaurar Planilha Original
