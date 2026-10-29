@@ -53,27 +53,34 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
-  const [isCloudConnected, setIsCloudConnected] = useState(false);
+  
+  // Status de sincronização com a nuvem: 'local' | 'connecting' | 'synced' | 'error'
+  const [cloudStatus, setCloudStatus] = useState(() => {
+    const creds = getSupabaseCredentials();
+    return (creds.url && creds.key) ? 'connecting' : 'local';
+  });
 
   // Sincronização inicial com o Supabase
   const initCloudSync = useCallback(async () => {
     const supabase = getSupabaseClient();
     if (!supabase) {
-      setIsCloudConnected(false);
+      setCloudStatus('local');
       return false;
     }
+
+    setCloudStatus('connecting');
 
     try {
       // 1. Tenta buscar da nuvem
       const cloudEntries = await fetchCloudEntries();
       if (cloudEntries && cloudEntries.length > 0) {
-        setIsCloudConnected(true);
+        setCloudStatus('synced');
         setEntries(cloudEntries);
         localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(cloudEntries));
       } else {
         // Se a tabela estiver vazia, popula com os dados iniciais
         await seedCloudDataIfEmpty(entries, settings);
-        setIsCloudConnected(true);
+        setCloudStatus('synced');
       }
 
       // 2. Busca configurações da nuvem
@@ -85,7 +92,7 @@ export default function App() {
       return true;
     } catch (e) {
       console.error('Falha na inicialização do Supabase:', e);
-      setIsCloudConnected(false);
+      setCloudStatus('error');
       return false;
     }
   }, [entries, settings]);
@@ -96,7 +103,7 @@ export default function App() {
 
   // Escuta alterações em tempo real do Supabase
   useEffect(() => {
-    if (!isCloudConnected) return;
+    if (cloudStatus !== 'synced') return;
 
     const channel = subscribeToRealtime(
       (updatedEntry) => {
@@ -210,7 +217,8 @@ export default function App() {
         setActiveTab={setActiveTab}
         onOpenNewEntry={handleOpenNewEntry}
         monthlyProjectedNetProfit={metrics.monthlyProjectedNetProfit}
-        isCloudConnected={isCloudConnected}
+        cloudStatus={cloudStatus}
+        isCloudConnected={cloudStatus === 'synced'}
       />
 
       {/* Conteúdo Principal com base na aba ativa */}
