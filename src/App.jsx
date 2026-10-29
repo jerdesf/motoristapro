@@ -72,14 +72,17 @@ export default function App() {
           await saveToCloud(entries, settings);
         }
         setCloudStatus('synced');
+        return true;
       } else {
         // Se a nuvem estiver vazia, popula imediatamente com os dados locais
         const saved = await saveToCloud(entries, settings);
         setCloudStatus(saved ? 'synced' : 'local');
+        return saved;
       }
     } catch (e) {
       console.warn('Sincronização em background indisponível:', e);
       setCloudStatus('local');
+      return false;
     }
   }, [entries, settings]);
 

@@ -5,6 +5,17 @@
 
 const STORAGE_KEY_DATA = 'motoristapro_full_data_v1';
 
+export async function checkCloudHealth() {
+  try {
+    const res = await fetch('/api/data?check=1');
+    if (res.ok) {
+      const json = await res.json();
+      return json.connected || false;
+    }
+  } catch (e) {}
+  return false;
+}
+
 export async function fetchFromCloud() {
   try {
     const controller = new AbortController();

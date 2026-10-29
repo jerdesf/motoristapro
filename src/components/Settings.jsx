@@ -56,13 +56,17 @@ export default function Settings({
     setSyncingNow(true);
     setSyncFeedback('Sincronizando com a nuvem...');
     try {
-      await onRefreshCloudConnection();
-      setSyncFeedback('Sincronizado com sucesso!');
+      const ok = await onRefreshCloudConnection();
+      if (ok) {
+        setSyncFeedback('Conectado e sincronizado com a nuvem Vercel!');
+      } else {
+        setSyncFeedback('Salvo no dispositivo. Aguarde o deploy da Vercel finalizar.');
+      }
     } catch {
       setSyncFeedback('Falha na sincronização.');
     } finally {
       setSyncingNow(false);
-      setTimeout(() => setSyncFeedback(''), 4000);
+      setTimeout(() => setSyncFeedback(''), 5000);
     }
   };
 

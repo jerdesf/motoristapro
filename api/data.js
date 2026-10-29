@@ -1,18 +1,22 @@
 import { Redis } from '@upstash/redis';
 
 function getRedis() {
-  const url =
-    process.env.UPSTASH_REDIS_REST_URL ||
-    process.env.KV_REST_API_URL;
-  const token =
-    process.env.UPSTASH_REDIS_REST_TOKEN ||
-    process.env.KV_REST_API_TOKEN;
+  try {
+    return Redis.fromEnv();
+  } catch (e) {
+    const url =
+      process.env.UPSTASH_REDIS_REST_URL ||
+      process.env.KV_REST_API_URL;
+    const token =
+      process.env.UPSTASH_REDIS_REST_TOKEN ||
+      process.env.KV_REST_API_TOKEN;
 
-  if (url && token) {
-    try {
-      return new Redis({ url, token });
-    } catch (e) {
-      console.error('Error initializing Upstash Redis:', e);
+    if (url && token) {
+      try {
+        return new Redis({ url, token });
+      } catch (err) {
+        console.error('Error initializing Upstash Redis manually:', err);
+      }
     }
   }
   return null;
@@ -34,6 +38,14 @@ export default async function handler(req, res) {
   }
 
   const redis = getRedis();
+
+  // Endpoint de verificação de status da conexão
+  if (req.method === 'GET' && req.url && req.url.includes('check=1')) {
+    return res.status(200).json({
+      connected: Boolean(redis),
+      hasEnv: Boolean(process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL),
+    });
+  }
 
   if (req.method === 'GET') {
     if (redis) {
