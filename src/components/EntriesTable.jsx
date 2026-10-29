@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Search, Filter, Download, Edit3, Trash2, 
-  Calendar, CheckCircle, Clock, PlusCircle
+  Calendar, CheckCircle, Clock, PlusCircle,
+  ArrowUpDown, SlidersHorizontal
 } from 'lucide-react';
 import { formatCurrency, formatDateBR } from '../utils/calculations';
 
@@ -9,9 +10,11 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'filled', 'pending'
   const [monthFilter, setMonthFilter] = useState('all'); // 'all', '08', '09', '10', '11', '12'
+  const [sortBy, setSortBy] = useState('filled_desc'); // 'filled_desc' (padrão), 'date_desc', 'date_asc', 'earnings_desc', 'earnings_asc'
 
-  const filteredEntries = useMemo(() => {
-    return entries.filter(entry => {
+  const filteredAndSortedEntries = useMemo(() => {
+    // 1. Filtragem
+    const filtered = entries.filter(entry => {
       // Filtro de texto (data ou dia da semana ou tipo)
       const matchesSearch = 
         entry.date.includes(searchTerm) || 
@@ -33,17 +36,57 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
 
       return true;
     });
-  }, [entries, searchTerm, statusFilter, monthFilter]);
+
+    // 2. Ordenação
+    return [...filtered].sort((a, b) => {
+      const aFilled = a.netEarnings !== null && a.netEarnings !== undefined;
+      const bFilled = b.netEarnings !== null && b.netEarnings !== undefined;
+      const aVal = Number(a.netEarnings) || 0;
+      const bVal = Number(b.netEarnings) || 0;
+
+      switch (sortBy) {
+        case 'filled_desc':
+          // Padrão: Dias preenchidos primeiro (do mais recente para o mais antigo), seguidos pelos pendentes
+          if (aFilled && !bFilled) return -1;
+          if (!aFilled && bFilled) return 1;
+          if (aFilled && bFilled) return b.date.localeCompare(a.date);
+          return a.date.localeCompare(b.date);
+
+        case 'date_desc':
+          // Data mais recente primeiro (mais nova para mais antiga)
+          return b.date.localeCompare(a.date);
+
+        case 'date_asc':
+          // Data mais antiga primeiro (mais antiga para mais nova)
+          return a.date.localeCompare(b.date);
+
+        case 'earnings_desc':
+          // Maior ganho primeiro
+          if (aFilled && !bFilled) return -1;
+          if (!aFilled && bFilled) return 1;
+          return bVal - aVal;
+
+        case 'earnings_asc':
+          // Menor ganho primeiro
+          if (aFilled && !bFilled) return -1;
+          if (!aFilled && bFilled) return 1;
+          return aVal - bVal;
+
+        default:
+          return b.date.localeCompare(a.date);
+      }
+    });
+  }, [entries, searchTerm, statusFilter, monthFilter, sortBy]);
 
   // Total acumulado dos filtrados
-  const sumFiltered = filteredEntries
-    .filter(e => e.netEarnings !== null)
+  const sumFiltered = filteredAndSortedEntries
+    .filter(e => e.netEarnings !== null && e.netEarnings !== undefined)
     .reduce((acc, e) => acc + (Number(e.netEarnings) || 0), 0);
 
   // Função para exportar para CSV
   const handleExportCSV = () => {
     const headers = ['Data', 'Dia', 'Tipo', 'Peso de trabalho', 'Realizado apos combustivel'];
-    const rows = entries.map(e => [
+    const rows = filteredAndSortedEntries.map(e => [
       e.date,
       e.dayName,
       e.type,
@@ -70,7 +113,7 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
           <div>
             <h2 className="font-bold text-white text-lg">Histórico de Lançamentos</h2>
             <p className="text-xs text-slate-400">
-              {filteredEntries.length} dias exibidos • Total realizado no filtro: <strong className="text-emerald-400">{formatCurrency(sumFiltered)}</strong>
+              {filteredAndSortedEntries.length} dias exibidos • Total realizado no filtro: <strong className="text-emerald-400">{formatCurrency(sumFiltered)}</strong>
             </p>
           </div>
 
@@ -94,10 +137,10 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
           </div>
         </div>
 
-        {/* Barra de Filtros */}
+        {/* Barra de Filtros e Organização */}
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-2 border-t border-slate-800">
           {/* Campo de Busca */}
-          <div className="sm:col-span-5 relative">
+          <div className="sm:col-span-4 relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
             <input
               type="text"
@@ -108,8 +151,28 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
             />
           </div>
 
+          {/* Botão de Organização / Ordenação */}
+          <div className="sm:col-span-3 relative">
+            <div className="relative flex items-center">
+              <span className="absolute left-3 pointer-events-none text-emerald-400">
+                <ArrowUpDown className="w-3.5 h-3.5" />
+              </span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full bg-[#161e31] border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
+              >
+                <option value="filled_desc">Últimos Preenchidos (Padrão)</option>
+                <option value="date_desc">Data Mais Recente (Nova → Antiga)</option>
+                <option value="date_asc">Data Mais Antiga (Cronológica)</option>
+                <option value="earnings_desc">Maior Ganho Líquido (R$)</option>
+                <option value="earnings_asc">Menor Ganho Líquido (R$)</option>
+              </select>
+            </div>
+          </div>
+
           {/* Filtro de Status */}
-          <div className="sm:col-span-4 flex items-center p-1 bg-[#161e31] border border-slate-800 rounded-xl">
+          <div className="sm:col-span-3 flex items-center p-1 bg-[#161e31] border border-slate-800 rounded-xl">
             <button
               type="button"
               onClick={() => setStatusFilter('all')}
@@ -140,7 +203,7 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
           </div>
 
           {/* Filtro de Mês */}
-          <div className="sm:col-span-3">
+          <div className="sm:col-span-2">
             <select
               value={monthFilter}
               onChange={(e) => setMonthFilter(e.target.value)}
@@ -171,7 +234,7 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {filteredEntries.map((entry) => {
+              {filteredAndSortedEntries.map((entry) => {
                 const isFilled = entry.netEarnings !== null && entry.netEarnings !== undefined;
                 const isZero = isFilled && Number(entry.netEarnings) === 0;
 
@@ -242,7 +305,7 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
                 );
               })}
 
-              {filteredEntries.length === 0 && (
+              {filteredAndSortedEntries.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-8 text-center text-slate-400">
                     Nenhum lançamento encontrado com os filtros selecionados.
