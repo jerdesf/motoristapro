@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
+const STORAGE_KEY = 'motoristapro_theme';
+
 const ThemeContext = createContext({
   theme: 'system',
   resolvedTheme: 'dark',
@@ -10,8 +12,30 @@ const ThemeContext = createContext({
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setThemeState] = useState('system');
-  const [resolvedTheme, setResolvedTheme] = useState('dark');
+  const getSystemDark = () => {
+    if (typeof window === 'undefined') return false;
+    return Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  };
+
+  const [theme, setThemeState] = useState(() => {
+    try {
+      localStorage.removeItem('theme'); // Limpa chave antiga
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved === 'light' || saved === 'dark' || saved === 'system') {
+        return saved;
+      }
+    } catch (e) {}
+    return 'system';
+  });
+
+  const [resolvedTheme, setResolvedTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved === 'dark') return 'dark';
+      if (saved === 'light') return 'light';
+    } catch (e) {}
+    return getSystemDark() ? 'dark' : 'light';
+  });
 
   const applyThemeToDOM = (isDark) => {
     if (isDark) {
@@ -21,27 +45,18 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
+  // Aplica o tema correto na montagem e quando o theme muda
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('theme');
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const activeTheme = saved && (saved === 'light' || saved === 'dark' || saved === 'system') 
-        ? saved 
-        : 'system';
-      setThemeState(activeTheme);
+    const isDark = theme === 'dark' || (theme === 'system' && getSystemDark());
+    setResolvedTheme(isDark ? 'dark' : 'light');
+    applyThemeToDOM(isDark);
+  }, [theme]);
 
-      const isDark = activeTheme === 'dark' || (activeTheme === 'system' && mediaQuery.matches);
-      setResolvedTheme(isDark ? 'dark' : 'light');
-      applyThemeToDOM(isDark);
-    } catch (e) {
-      // fallback
-    }
-  }, []);
-
+  // Listener em tempo real para mudanças no tema do sistema operacional (Mac / Android / iOS)
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-    const handler = (e) => {
+    const handleChange = (e) => {
       if (theme === 'system') {
         const isDark = e.matches;
         setResolvedTheme(isDark ? 'dark' : 'light');
@@ -49,22 +64,26 @@ export const ThemeProvider = ({ children }) => {
       }
     };
 
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    } else if (mediaQuery.addListener) {
+      mediaQuery.addListener(handleChange);
+      return () => mediaQuery.removeListener(handleChange);
+    }
   }, [theme]);
 
   const setTheme = (newTheme) => {
     setThemeState(newTheme);
     try {
       if (newTheme === 'system') {
-        localStorage.removeItem('theme');
+        localStorage.removeItem(STORAGE_KEY);
       } else {
-        localStorage.setItem('theme', newTheme);
+        localStorage.setItem(STORAGE_KEY, newTheme);
       }
     } catch (e) {}
 
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const isDark = newTheme === 'dark' || (newTheme === 'system' && mediaQuery.matches);
+    const isDark = newTheme === 'dark' || (newTheme === 'system' && getSystemDark());
     setResolvedTheme(isDark ? 'dark' : 'light');
     applyThemeToDOM(isDark);
   };

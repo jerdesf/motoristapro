@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { 
   Settings as SettingsIcon, Save, RotateCcw, 
   Download, Upload, Check, AlertTriangle, ShieldCheck, 
-  Fuel, Calendar, Car, Cloud, CloudOff, RefreshCw, Database
+  Fuel, Calendar, Car, Cloud, CloudOff, RefreshCw, Database,
+  Sun, Moon, Laptop
 } from 'lucide-react';
 import { formatCurrency } from '../utils/calculations';
+import { useTheme } from './ThemeProvider';
 
 function parseFlexibleNumber(val) {
   if (val === null || val === undefined) return 0;
@@ -24,6 +26,7 @@ export default function Settings({
   isCloudConnected,
   onRefreshCloudConnection
 }) {
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [formData, setFormData] = useState({ ...settings });
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [syncingNow, setSyncingNow] = useState(false);
@@ -136,6 +139,60 @@ export default function Settings({
             Salvo com Sucesso!
           </div>
         )}
+      </div>
+
+      {/* Bloco de Aparência / Tema do Sistema */}
+      <div className="bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm dark:shadow-xl space-y-3 transition-colors duration-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sun className="w-5 h-5 text-amber-500" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Tema & Aparência</h3>
+          </div>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            {theme === 'system' ? 'Acompanhando o Sistema' : theme === 'dark' ? 'Modo Escuro (Fixo)' : 'Modo Claro (Fixo)'}
+          </span>
+        </div>
+        <p className="text-xs text-slate-600 dark:text-slate-400">
+          Por padrão, o app acompanha automaticamente o tema configurado no seu Mac ou Android.
+        </p>
+        <div className="grid grid-cols-3 gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => setTheme('system')}
+            className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all ${
+              theme === 'system'
+                ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-500/30'
+                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Laptop className="w-4 h-4" />
+            Sistema (Auto)
+          </button>
+          <button
+            type="button"
+            onClick={() => setTheme('light')}
+            className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all ${
+              theme === 'light'
+                ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-500/30'
+                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Sun className="w-4 h-4" />
+            Claro
+          </button>
+          <button
+            type="button"
+            onClick={() => setTheme('dark')}
+            className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all ${
+              theme === 'dark'
+                ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-500/30'
+                : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Moon className="w-4 h-4" />
+            Escuro
+          </button>
+        </div>
       </div>
 
       {/* Bloco 0: Sincronização em Nuvem (Vercel KV / Upstash Redis) */}
