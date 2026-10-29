@@ -52,6 +52,22 @@ export const ThemeProvider = ({ children }) => {
     applyThemeToDOM(isDark);
   }, [theme]);
 
+  // Listener em tempo real para sincronização instantânea entre abas abertas no mesmo navegador
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === STORAGE_KEY) {
+        const newTheme = e.newValue || 'system';
+        setThemeState(newTheme);
+        const isDark = newTheme === 'dark' || (newTheme === 'system' && getSystemDark());
+        setResolvedTheme(isDark ? 'dark' : 'light');
+        applyThemeToDOM(isDark);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // Listener em tempo real para mudanças no tema do sistema operacional (Mac / Android / iOS)
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
