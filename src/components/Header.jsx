@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   TrendingUp, Calendar, ListFilter, Settings, 
-  PlusCircle, Sun, Moon, Cloud, CloudOff, Loader2 
+  PlusCircle, Sun, Moon 
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import { formatCurrency } from '../utils/calculations';
@@ -10,9 +10,7 @@ export default function Header({
   activeTab, 
   setActiveTab, 
   onOpenNewEntry, 
-  monthlyProjectedNetProfit,
-  isCloudConnected,
-  cloudStatus = 'local'
+  monthlyProjectedNetProfit
 }) {
   const { resolvedTheme, toggleTheme } = useTheme();
 
@@ -101,35 +99,6 @@ export default function Header({
                 {formatCurrency(monthlyProjectedNetProfit)}/mês
               </span>
             </div>
-
-            {/* Indicador de Nuvem (Desktop & Mobile) */}
-            {cloudStatus === 'synced' ? (
-              <div 
-                title="Sincronizado na nuvem (Supabase em tempo real)"
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-semibold shadow-sm"
-              >
-                <Cloud className="w-3.5 h-3.5 animate-pulse" />
-                <span className="hidden sm:inline">Nuvem</span>
-              </div>
-            ) : cloudStatus === 'connecting' ? (
-              <div 
-                title="Conectando e sincronizando com a nuvem..."
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 text-xs font-medium"
-              >
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span className="hidden sm:inline">Conectando...</span>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setActiveTab('settings')}
-                title="Armazenamento local. Clique para conectar ao Supabase."
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs font-medium border border-slate-200 dark:border-slate-700 transition-colors"
-              >
-                <CloudOff className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Local</span>
-              </button>
-            )}
 
             {/* Botão de Alternar Modo Claro / Escuro */}
             <button

@@ -190,8 +190,6 @@ export default function App() {
         setActiveTab={setActiveTab}
         onOpenNewEntry={handleOpenNewEntry}
         monthlyProjectedNetProfit={metrics.monthlyProjectedNetProfit}
-        cloudStatus={cloudStatus}
-        isCloudConnected={cloudStatus === 'synced'}
       />
 
       {/* Conteúdo Principal com base na aba ativa */}
