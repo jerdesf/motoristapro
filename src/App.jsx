@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import Dashboard from './components/Dashboard';
@@ -8,6 +8,15 @@ import Settings from './components/Settings';
 import EntryModal from './components/EntryModal';
 import { INITIAL_ENTRIES, INITIAL_SETTINGS } from './data/initialData';
 import { calculateMetrics, getDayNameBR } from './utils/calculations';
+import { 
+  fetchCloudEntries, 
+  syncEntryToCloud, 
+  fetchCloudSettings, 
+  syncSettingsToCloud, 
+  seedCloudDataIfEmpty, 
+  subscribeToRealtime 
+} from './services/syncService';
+import { getSupabaseClient } from './services/supabase';
 
 const STORAGE_KEY_ENTRIES = 'motoristapro_entries_v1';
 const STORAGE_KEY_SETTINGS = 'motoristapro_settings_v1';
@@ -20,7 +29,6 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Garante que feriados/folgas fiquem considerados como preenchidos (R$ 0)
           return parsed.map(e => e.type === 'Feriado' && e.netEarnings === null ? { ...e, netEarnings: 0 } : e);
         }
       }
@@ -45,6 +53,73 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  const [isCloudConnected, setIsCloudConnected] = useState(false);
+
+  // Sincronização inicial com o Supabase
+  const initCloudSync = useCallback(async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setIsCloudConnected(false);
+      return false;
+    }
+
+    try {
+      // 1. Tenta buscar da nuvem
+      const cloudEntries = await fetchCloudEntries();
+      if (cloudEntries && cloudEntries.length > 0) {
+        setIsCloudConnected(true);
+        setEntries(cloudEntries);
+        localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(cloudEntries));
+      } else {
+        // Se a tabela estiver vazia, popula com os dados iniciais
+        await seedCloudDataIfEmpty(entries, settings);
+        setIsCloudConnected(true);
+      }
+
+      // 2. Busca configurações da nuvem
+      const cloudSettings = await fetchCloudSettings();
+      if (cloudSettings) {
+        setSettings(prev => ({ ...prev, ...cloudSettings }));
+      }
+
+      return true;
+    } catch (e) {
+      console.error('Falha na inicialização do Supabase:', e);
+      setIsCloudConnected(false);
+      return false;
+    }
+  }, [entries, settings]);
+
+  useEffect(() => {
+    initCloudSync();
+  }, []);
+
+  // Escuta alterações em tempo real do Supabase
+  useEffect(() => {
+    if (!isCloudConnected) return;
+
+    const channel = subscribeToRealtime(
+      (updatedEntry) => {
+        setEntries(prev => {
+          const index = prev.findIndex(e => e.date === updatedEntry.date);
+          if (index >= 0) {
+            const copy = [...prev];
+            copy[index] = { ...copy[index], ...updatedEntry };
+            return copy;
+          } else {
+            return [...prev, updatedEntry].sort((a, b) => a.date.localeCompare(b.date));
+          }
+        });
+      },
+      (updatedSettings) => {
+        setSettings(prev => ({ ...prev, ...updatedSettings }));
+      }
+    );
+
+    return () => {
+      if (channel) channel.unsubscribe();
+    };
+  }, [isCloudConnected]);
 
   // Salvar no localStorage sempre que entries ou settings mudarem
   useEffect(() => {
@@ -82,12 +157,11 @@ export default function App() {
     setIsEntryModalOpen(true);
   };
 
-  // Salvar ou atualizar lançamento
+  // Salvar ou atualizar lançamento (local + nuvem)
   const handleSaveEntry = (entryData) => {
     setEntries(prevEntries => {
       const index = prevEntries.findIndex(e => e.date === entryData.date);
       if (index >= 0) {
-        // Atualiza dia existente
         const updated = [...prevEntries];
         updated[index] = {
           ...updated[index],
@@ -95,16 +169,23 @@ export default function App() {
         };
         return updated;
       } else {
-        // Adiciona novo dia e ordena por data
         const newEntries = [...prevEntries, entryData];
         return newEntries.sort((a, b) => a.date.localeCompare(b.date));
       }
     });
+
+    // Envia assincronamente para a nuvem
+    if (isCloudConnected) {
+      syncEntryToCloud(entryData);
+    }
   };
 
-  // Salvar configurações
+  // Salvar configurações (local + nuvem)
   const handleSaveSettings = (newSettings) => {
     setSettings(newSettings);
+    if (isCloudConnected) {
+      syncSettingsToCloud(newSettings);
+    }
   };
 
   // Restaurar dados originais da planilha
@@ -129,10 +210,11 @@ export default function App() {
         setActiveTab={setActiveTab}
         onOpenNewEntry={handleOpenNewEntry}
         monthlyProjectedNetProfit={metrics.monthlyProjectedNetProfit}
+        isCloudConnected={isCloudConnected}
       />
 
       {/* Conteúdo Principal com base na aba ativa */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-20 md:pb-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-20 md:pb-8">
         {activeTab === 'dashboard' && (
           <Dashboard
             metrics={metrics}
@@ -167,6 +249,8 @@ export default function App() {
             onResetToDefault={handleResetToDefault}
             allEntries={entries}
             onImportBackup={handleImportBackup}
+            isCloudConnected={isCloudConnected}
+            onRefreshCloudConnection={initCloudSync}
           />
         )}
       </main>

@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { 
   Settings as SettingsIcon, Save, RotateCcw, 
   Download, Upload, Check, AlertTriangle, ShieldCheck, 
-  Fuel, Calendar, Car
+  Fuel, Calendar, Car, Cloud, CloudOff, Database, Copy, ExternalLink
 } from 'lucide-react';
 import { formatCurrency } from '../utils/calculations';
+import { getSupabaseCredentials, saveSupabaseCredentials } from '../services/supabase';
 
 function parseFlexibleNumber(val) {
   if (val === null || val === undefined) return 0;
@@ -20,10 +21,19 @@ export default function Settings({
   onSaveSettings, 
   onResetToDefault,
   allEntries,
-  onImportBackup 
+  onImportBackup,
+  isCloudConnected,
+  onRefreshCloudConnection
 }) {
   const [formData, setFormData] = useState({ ...settings });
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Estados do Supabase
+  const initialCreds = getSupabaseCredentials();
+  const [supabaseUrl, setSupabaseUrl] = useState(initialCreds.url);
+  const [supabaseKey, setSupabaseKey] = useState(initialCreds.key);
+  const [cloudMessage, setCloudMessage] = useState('');
+  const [copiedSql, setCopiedSql] = useState(false);
 
   const handleChange = (field, value) => {
     const cleaned = value.replace(/[^0-9.,]/g, '');
@@ -45,6 +55,70 @@ export default function Settings({
     });
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
+  };
+
+  const handleSaveCloud = (e) => {
+    e.preventDefault();
+    if (!supabaseUrl || !supabaseKey) {
+      alert('Por favor, preencha a URL e a Anon Key do seu projeto Supabase.');
+      return;
+    }
+    saveSupabaseCredentials(supabaseUrl, supabaseKey);
+    setCloudMessage('Conectando e sincronizando...');
+    if (onRefreshCloudConnection) {
+      onRefreshCloudConnection().then((success) => {
+        if (success) {
+          setCloudMessage('Sincronizado com sucesso na nuvem!');
+        } else {
+          setCloudMessage('Chaves salvas! Verifique se rodou o script SQL das tabelas no Supabase.');
+        }
+        setTimeout(() => setCloudMessage(''), 5000);
+      });
+    }
+  };
+
+  const handleDisconnectCloud = () => {
+    if (confirm('Deseja desconectar a sincronização na nuvem? Os dados continuarão salvos no aparelho.')) {
+      saveSupabaseCredentials('', '');
+      setSupabaseUrl('');
+      setSupabaseKey('');
+      if (onRefreshCloudConnection) onRefreshCloudConnection();
+    }
+  };
+
+  const handleCopySQL = () => {
+    const sql = `-- 1. Tabela de Lançamentos
+CREATE TABLE IF NOT EXISTS public.entries (
+    date TEXT PRIMARY KEY,
+    day_name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    weight NUMERIC NOT NULL DEFAULT 1.0,
+    net_earnings NUMERIC,
+    meta JSONB,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Tabela de Configurações
+CREATE TABLE IF NOT EXISTS public.settings (
+    id TEXT PRIMARY KEY DEFAULT 'default',
+    data JSONB NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Acesso
+ALTER TABLE public.entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Acesso total aos lançamentos" ON public.entries FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Acesso total às configurações" ON public.settings FOR ALL USING (true) WITH CHECK (true);
+
+-- 4. Realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE public.entries;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.settings;`;
+
+    navigator.clipboard.writeText(sql);
+    setCopiedSql(true);
+    setTimeout(() => setCopiedSql(false), 3000);
   };
 
   // Exportar backup JSON completo
@@ -103,7 +177,7 @@ export default function Settings({
           </div>
           <div>
             <h2 className="font-bold text-slate-900 dark:text-white text-base sm:text-lg">Configurações & Parâmetros</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Ajuste seus custos diários e combustível padrão</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Ajuste seus custos diários e sincronização</p>
           </div>
         </div>
 
@@ -113,6 +187,110 @@ export default function Settings({
             Salvo com Sucesso!
           </div>
         )}
+      </div>
+
+      {/* Bloco 0: Sincronização em Nuvem (Supabase) */}
+      <div className="bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-xl space-y-4 transition-colors duration-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <Cloud className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Sincronização em Nuvem (Supabase)</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            {isCloudConnected ? (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                Conectado & Sincronizado
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 text-xs font-medium">
+                <CloudOff className="w-3 h-3" />
+                Armazenamento Local
+              </span>
+            )}
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-600 dark:text-slate-400">
+          Conecte sua conta do <strong>Supabase</strong> para sincronizar seus lançamentos em tempo real entre o celular e o computador.
+        </p>
+
+        <form onSubmit={handleSaveCloud} className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Project URL
+              </label>
+              <input
+                type="text"
+                placeholder="https://xyz.supabase.co"
+                value={supabaseUrl}
+                onChange={(e) => setSupabaseUrl(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white text-xs focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                Anon Public Key
+              </label>
+              <input
+                type="password"
+                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+                value={supabaseKey}
+                onChange={(e) => setSupabaseKey(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-slate-900 dark:text-white text-xs focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {cloudMessage && (
+            <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 animate-fadeIn">
+              {cloudMessage}
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopySQL}
+                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors border border-slate-200 dark:border-slate-700"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                {copiedSql ? 'Copiado!' : 'Copiar Script SQL'}
+              </button>
+              <a
+                href="https://supabase.com"
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+              >
+                Abrir Supabase
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {isCloudConnected && (
+                <button
+                  type="button"
+                  onClick={handleDisconnectCloud}
+                  className="px-3 py-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-xs font-medium transition-colors"
+                >
+                  Desconectar
+                </button>
+              )}
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 active:scale-95 transition-all"
+              >
+                <Cloud className="w-3.5 h-3.5" />
+                Salvar & Conectar
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
 
       <form onSubmit={handleSave} className="space-y-5 sm:space-y-6">
@@ -280,11 +458,11 @@ export default function Settings({
       <div className="bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-xl space-y-4 transition-colors duration-200">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
           <ShieldCheck className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-          <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Segurança dos Seus Dados & Backup</h3>
+          <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Backup Manual</h3>
         </div>
 
         <p className="text-xs text-slate-600 dark:text-slate-400">
-          Todos os seus lançamentos e configurações ficam salvos no armazenamento local deste navegador. Para não perder nada ao trocar de celular ou computador, baixe uma cópia de segurança.
+          Você também pode baixar uma cópia de segurança em arquivo JSON para guardar no seu computador.
         </p>
 
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 pt-2">

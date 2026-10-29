@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   TrendingUp, Calendar, ListFilter, Settings, 
-  PlusCircle, Sun, Moon 
+  PlusCircle, Sun, Moon, Cloud, CloudOff 
 } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
 import { formatCurrency } from '../utils/calculations';
@@ -10,7 +10,8 @@ export default function Header({
   activeTab, 
   setActiveTab, 
   onOpenNewEntry, 
-  monthlyProjectedNetProfit 
+  monthlyProjectedNetProfit,
+  isCloudConnected
 }) {
   const { resolvedTheme, toggleTheme } = useTheme();
 
@@ -99,6 +100,27 @@ export default function Header({
                 {formatCurrency(monthlyProjectedNetProfit)}/mês
               </span>
             </div>
+
+            {/* Indicador de Nuvem */}
+            {isCloudConnected ? (
+              <div 
+                title="Sincronizado na nuvem (Supabase em tempo real)"
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-xs font-semibold"
+              >
+                <Cloud className="w-3.5 h-3.5" />
+                <span>Nuvem</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setActiveTab('settings')}
+                title="Armazenamento local. Clique para conectar ao Supabase."
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 text-xs font-medium border border-slate-200 dark:border-slate-700 transition-colors"
+              >
+                <CloudOff className="w-3.5 h-3.5" />
+                <span>Local</span>
+              </button>
+            )}
 
             {/* Botão de Alternar Modo Claro / Escuro */}
             <button
