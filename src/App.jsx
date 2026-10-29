@@ -64,6 +64,8 @@ export default function App() {
     }
   });
 
+  const isCloudConnected = cloudStatus === 'synced';
+
   // Sincronização inicial com o Supabase
   const initCloudSync = useCallback(async () => {
     const supabase = getSupabaseClient();
