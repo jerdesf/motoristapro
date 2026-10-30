@@ -8,9 +8,9 @@ import { formatCurrency, formatDateBR } from '../utils/calculations';
 
 export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'filled', 'pending'
+  const [statusFilter, setStatusFilter] = useState('filled'); // Padrão: 'filled' (apenas preenchidos)
   const [monthFilter, setMonthFilter] = useState('all'); // 'all', '08', '09', '10', '11', '12'
-  const [sortBy, setSortBy] = useState('filled_desc'); // 'filled_desc' (padrão)
+  const [sortBy, setSortBy] = useState('date_desc'); // Padrão: do mais recente para o mais antigo
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -25,10 +25,10 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
 
       if (!matchesSearch) return false;
 
-      // Filtro de status: Realizado considera preenchidos até o dia de hoje
-      const isPastFilled = entry.netEarnings !== null && entry.netEarnings !== undefined && entry.date <= todayStr;
-      if (statusFilter === 'filled' && !isPastFilled) return false;
-      if (statusFilter === 'pending' && isPastFilled) return false;
+      // Filtro de status: Preenchidos considera qualquer dia que tem lançamento registrado
+      const isFilled = entry.netEarnings !== null && entry.netEarnings !== undefined && entry.netEarnings !== '';
+      if (statusFilter === 'filled' && !isFilled) return false;
+      if (statusFilter === 'pending' && isFilled) return false;
 
       // Filtro de mês
       if (monthFilter !== 'all') {
@@ -41,38 +41,32 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
 
     // 2. Ordenação
     return [...filtered].sort((a, b) => {
-      const isPastFilled = (e) => e.netEarnings !== null && e.netEarnings !== undefined && e.date <= todayStr;
-      const aPast = isPastFilled(a);
-      const bPast = isPastFilled(b);
       const aVal = Number(a.netEarnings) || 0;
       const bVal = Number(b.netEarnings) || 0;
 
       switch (sortBy) {
-        case 'filled_desc':
-          // Padrão: Dias preenchidos até hoje primeiro (do mais novo para o mais antigo), seguidos pelos dias futuros
-          if (aPast && !bPast) return -1;
-          if (!aPast && bPast) return 1;
-          if (aPast && bPast) return b.date.localeCompare(a.date);
-          return a.date.localeCompare(b.date);
-
         case 'date_desc':
-          // Data mais recente primeiro (mais nova para mais antiga)
+          // Padrão: Data mais recente primeiro (mais nova para mais antiga)
           return b.date.localeCompare(a.date);
 
         case 'date_asc':
           // Data mais antiga primeiro (mais antiga para mais nova)
           return a.date.localeCompare(b.date);
 
+        case 'filled_desc':
+          // Preenchidos primeiro, seguidos pelos pendentes
+          const aHas = a.netEarnings !== null && a.netEarnings !== undefined;
+          const bHas = b.netEarnings !== null && b.netEarnings !== undefined;
+          if (aHas && !bHas) return -1;
+          if (!aHas && bHas) return 1;
+          return b.date.localeCompare(a.date);
+
         case 'earnings_desc':
           // Maior ganho primeiro
-          if (aPast && !bPast) return -1;
-          if (!aPast && bPast) return 1;
           return bVal - aVal;
 
         case 'earnings_asc':
           // Menor ganho primeiro
-          if (aPast && !bPast) return -1;
-          if (!aPast && bPast) return 1;
           return aVal - bVal;
 
         default:
@@ -165,9 +159,8 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
               >
-                <option value="filled_desc">Últimos Preenchidos até Hoje (Padrão)</option>
-                <option value="date_desc">Data Mais Recente (Nova → Antiga)</option>
-                <option value="date_asc">Data Mais Antiga (Cronológica)</option>
+                <option value="date_desc">Mais Recentes Primeiro (Padrão)</option>
+                <option value="date_asc">Mais Antigos Primeiro (Cronológica)</option>
                 <option value="earnings_desc">Maior Ganho Líquido (R$)</option>
                 <option value="earnings_asc">Menor Ganho Líquido (R$)</option>
               </select>
@@ -178,21 +171,21 @@ export default function EntriesTable({ entries, onEditEntry, onOpenNewEntry }) {
           <div className="sm:col-span-3 flex items-center p-1 bg-slate-100 dark:bg-[#161e31] border border-slate-200 dark:border-slate-800 rounded-xl">
             <button
               type="button"
+              onClick={() => setStatusFilter('filled')}
+              className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition-colors ${
+                statusFilter === 'filled' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              Preenchidos
+            </button>
+            <button
+              type="button"
               onClick={() => setStatusFilter('all')}
               className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition-colors ${
                 statusFilter === 'all' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             >
               Todos
-            </button>
-            <button
-              type="button"
-              onClick={() => setStatusFilter('filled')}
-              className={`flex-1 py-1.5 text-[11px] font-semibold rounded-lg transition-colors ${
-                statusFilter === 'filled' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
-            >
-              Realizados
             </button>
             <button
               type="button"

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Calendar, Fuel, DollarSign, Check, 
-  Sparkles, Gauge, ArrowRight
+  Sparkles, Gauge, ArrowRight, Trash2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { 
   formatCurrency, formatNumber, calculateFuelDetail, 
-  getDayNameBR, getDefaultDayType, getDefaultWeight 
+  getDayNameBR, formatDateBR, getDefaultDayType, getDefaultWeight 
 } from '../utils/calculations';
 
 // Função auxiliar flexível para aceitar tanto ponto quanto vírgula
@@ -25,6 +25,7 @@ export default function EntryModal({
   initialEntry, 
   allEntries = [],
   onSave, 
+  onDelete,
   settings,
   avgEarningsPerWeight = 338 
 }) {
@@ -402,22 +403,42 @@ export default function EntryModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[#161e31] flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 font-medium text-sm transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm shadow-md shadow-emerald-500/20 flex items-center gap-2 transition-all active:scale-95"
-          >
-            <Check className="w-4 h-4" />
-            Salvar Lançamento
-          </button>
+        <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[#161e31] flex items-center justify-between gap-2 sm:gap-3">
+          {initialEntry?.netEarnings !== null && initialEntry?.netEarnings !== undefined && onDelete ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`Tem certeza que deseja excluir o lançamento de ${formatDateBR(date)}?`)) {
+                  onDelete(date);
+                  onClose();
+                }
+              }}
+              className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 font-medium text-xs sm:text-sm flex items-center gap-1.5 transition-all active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Excluir</span>
+            </button>
+          ) : (
+            <div />
+          )}
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 font-medium text-xs sm:text-sm transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-emerald-500/20 flex items-center gap-1.5 sm:gap-2 transition-all active:scale-95"
+            >
+              <Check className="w-4 h-4" />
+              Salvar Lançamento
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import {
   TrendingUp, DollarSign, Calendar, ShieldCheck, 
   Zap, Award, ChevronRight, Edit3, PlusCircle
 } from 'lucide-react';
-import { formatCurrency, formatDateBR } from '../utils/calculations';
+import { formatCurrency, formatDateBR, getTodayBR } from '../utils/calculations';
 
 export default function Dashboard({ 
   metrics, 
@@ -13,11 +13,13 @@ export default function Dashboard({
   onEditEntry,
   setActiveTab 
 }) {
-  // Pegar os últimos 7 dias realizados até a data atual considerada
+  const todayStr = getTodayBR();
+  // Pegar os últimos 7 dias realizados estritamente até a data atual de hoje
   const filledEntries = entries.filter(e => 
     e.netEarnings !== null && 
     e.netEarnings !== undefined && 
-    e.date <= metrics.lastConsideredDate
+    e.netEarnings !== '' &&
+    e.date <= todayStr
   );
   const recentEntries = [...filledEntries].slice(-7).reverse();
 
@@ -151,7 +153,7 @@ export default function Dashboard({
               onClick={() => setActiveTab('entries')}
               className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center gap-1 transition-colors"
             >
-              Ver todos ({metrics.filledEntries})
+              Ver todos ({filledEntries.length})
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>

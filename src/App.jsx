@@ -196,6 +196,28 @@ function MotoristaApp() {
     handleCloseModal();
   };
 
+  // Excluir lançamento (reverte o dia para pendente sem ganhos)
+  const handleDeleteEntry = useCallback((targetDate) => {
+    let updatedEntries;
+    setEntries(prevEntries => {
+      updatedEntries = prevEntries.map(e => {
+        if (e.date === targetDate) {
+          return {
+            ...e,
+            netEarnings: null,
+            meta: undefined,
+          };
+        }
+        return e;
+      });
+      return updatedEntries;
+    });
+
+    if (updatedEntries) {
+      saveToCloud(updatedEntries, settings);
+    }
+  }, [settings]);
+
   // Salvar configurações (local + nuvem)
   const handleSaveSettings = (newSettings) => {
     setSettings(newSettings);
@@ -280,6 +302,7 @@ function MotoristaApp() {
         initialEntry={editingEntry}
         allEntries={entries}
         onSave={handleSaveEntry}
+        onDelete={handleDeleteEntry}
         settings={settings}
         avgEarningsPerWeight={metrics.avgEarningsPerWeight}
       />
