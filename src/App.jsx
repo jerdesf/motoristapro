@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import Dashboard from './components/Dashboard';
@@ -6,8 +6,13 @@ import CalendarView from './components/CalendarView';
 import EntriesTable from './components/EntriesTable';
 import Settings from './components/Settings';
 import EntryModal from './components/EntryModal';
+import {
+  BackNavigationProvider,
+  useBackNavigation,
+  useRegisterOverlay,
+} from './components/BackNavigationProvider';
 import { INITIAL_ENTRIES, INITIAL_SETTINGS } from './data/initialData';
-import { calculateMetrics, getDayNameBR } from './utils/calculations';
+import { calculateMetrics } from './utils/calculations';
 import { fetchFromCloud, saveToCloud } from './services/cloudStorage';
 
 const STORAGE_KEY_ENTRIES = 'motoristapro_entries_v1';
@@ -15,6 +20,18 @@ const STORAGE_KEY_SETTINGS = 'motoristapro_settings_v1';
 const STORAGE_KEY_TIMESTAMP = 'motoristapro_last_modified';
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+
+  return (
+    <BackNavigationProvider activeTab={activeTab} onTabChange={setActiveTab}>
+      <MotoristaApp />
+    </BackNavigationProvider>
+  );
+}
+
+function MotoristaApp() {
+  const { activeTab, changeTab } = useBackNavigation();
+
   // Inicialização com localStorage ou dados importados da planilha
   const [entries, setEntries] = useState(() => {
     try {
@@ -43,33 +60,18 @@ export default function App() {
     return INITIAL_SETTINGS;
   });
 
-  const [activeTab, setActiveTab] = useState('dashboard');
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
 
-  // Refs para controle do gesto Voltar no Android (History API)
-  const activeTabRef = useRef(activeTab);
-  activeTabRef.current = activeTab;
-
-  const isEntryModalOpenRef = useRef(isEntryModalOpen);
-  isEntryModalOpenRef.current = isEntryModalOpen;
-
-  const modalPushedRef = useRef(false);
-  const subviewPushedRef = useRef(false);
-  const isProgrammaticBackRef = useRef(false);
-  const isExitingRef = useRef(false);
-  const lastBackPressRef = useRef(0);
-
-  // Toast nativo para confirmação de saída do app no Android
-  const [showExitToast, setShowExitToast] = useState(false);
-
-  useEffect(() => {
-    if (!showExitToast) return;
-    const timer = setTimeout(() => {
-      setShowExitToast(false);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [showExitToast]);
+  // Registro de overlays para gesto voltar no Android (fecha modal sem sair do app)
+  useRegisterOverlay(
+    isEntryModalOpen,
+    () => {
+      setIsEntryModalOpen(false);
+      setEditingEntry(null);
+    },
+    'entry-modal'
+  );
   
   // Status de sincronização com a nuvem Vercel KV / Redis: 'synced' | 'syncing' | 'local' | 'offline'
   const [cloudStatus, setCloudStatus] = useState('synced');
@@ -127,90 +129,6 @@ export default function App() {
     };
   }, [syncWithCloud]);
 
-  // Navegação nativa Android com gesto Voltar (History API)
-  useEffect(() => {
-    // Garante que o estado base inicial no histórico seja o dashboard com buffer de segurança
-    if (typeof window !== 'undefined') {
-      window.history.replaceState({ view: 'dashboard', root: true }, '');
-      window.history.pushState({ view: 'dashboard', buffer: true }, '');
-    }
-
-    const handlePopState = () => {
-      // Se foi disparado programaticamente por nós (ex: ao fechar modal ou mudar de aba via botão), ignora
-      if (isProgrammaticBackRef.current) {
-        isProgrammaticBackRef.current = false;
-        return;
-      }
-
-      // Se já estiver no processo final de encerramento do app, deixa o navegador concluir
-      if (isExitingRef.current) {
-        return;
-      }
-
-      // REGRA 1: Se tiver algum card/modal aberto, o gesto de voltar fecha ele
-      if (isEntryModalOpenRef.current) {
-        modalPushedRef.current = false;
-        setIsEntryModalOpen(false);
-        setEditingEntry(null);
-        return;
-      }
-
-      // REGRA 2: Se estiver em outra view que não a primeira (dashboard), volta pra primeira
-      if (activeTabRef.current !== 'dashboard') {
-        subviewPushedRef.current = false;
-        setActiveTab('dashboard');
-        return;
-      }
-
-      // REGRA 3: Se já estiver na primeira view (dashboard):
-      // Tenta fechar a janela do PWA diretamente se a plataforma permitir
-      try {
-        window.close();
-      } catch (err) {}
-
-      const now = Date.now();
-      if (now - lastBackPressRef.current < 2000) {
-        // Segundo toque dentro de 2s: sai do app definitivamente sem cair em telas pretas
-        isExitingRef.current = true;
-        try {
-          window.close();
-        } catch (err) {}
-        window.history.back();
-        return;
-      }
-
-      // Primeiro toque: exibe o toast nativo e mantém o buffer no dashboard
-      lastBackPressRef.current = now;
-      setShowExitToast(true);
-      window.history.pushState({ view: 'dashboard', buffer: true }, '');
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  // Transição de abas sincronizada com o histórico do Android
-  const handleTabChange = useCallback((newTab) => {
-    if (newTab === activeTabRef.current) return;
-
-    if (newTab === 'dashboard') {
-      if (subviewPushedRef.current) {
-        subviewPushedRef.current = false;
-        isProgrammaticBackRef.current = true;
-        window.history.back();
-      }
-      setActiveTab('dashboard');
-    } else {
-      if (!subviewPushedRef.current) {
-        window.history.pushState({ view: newTab }, '');
-        subviewPushedRef.current = true;
-      } else {
-        window.history.replaceState({ view: newTab }, '');
-      }
-      setActiveTab(newTab);
-    }
-  }, []);
-
   // Salvar no localStorage sempre que entries ou settings mudarem
   useEffect(() => {
     try {
@@ -239,31 +157,16 @@ export default function App() {
     const existing = entries.find(e => e.date === todayStr);
     setEditingEntry(existing || null);
     setIsEntryModalOpen(true);
-
-    if (!modalPushedRef.current) {
-      window.history.pushState({ modal: 'entry' }, '');
-      modalPushedRef.current = true;
-    }
   }, [entries]);
 
   // Abertura do modal para editar dia específico
   const handleEditEntry = useCallback((entry) => {
     setEditingEntry(entry);
     setIsEntryModalOpen(true);
-
-    if (!modalPushedRef.current) {
-      window.history.pushState({ modal: 'entry' }, '');
-      modalPushedRef.current = true;
-    }
   }, []);
 
-  // Fechamento seguro do modal (via botão X, Cancelar ou salvar)
+  // Fechamento seguro do modal
   const handleCloseModal = useCallback(() => {
-    if (modalPushedRef.current) {
-      modalPushedRef.current = false;
-      isProgrammaticBackRef.current = true;
-      window.history.back();
-    }
     setIsEntryModalOpen(false);
     setEditingEntry(null);
   }, []);
@@ -318,7 +221,7 @@ export default function App() {
       {/* Header superior */}
       <Header
         activeTab={activeTab}
-        setActiveTab={handleTabChange}
+        setActiveTab={changeTab}
         onOpenNewEntry={handleOpenNewEntry}
       />
 
@@ -331,7 +234,7 @@ export default function App() {
             settings={settings}
             onOpenNewEntry={handleOpenNewEntry}
             onEditEntry={handleEditEntry}
-            setActiveTab={handleTabChange}
+            setActiveTab={changeTab}
           />
         )}
 
@@ -364,19 +267,10 @@ export default function App() {
         )}
       </main>
 
-      {/* Toast flutuante nativo Android: confirmação de saída sem tela preta */}
-      {showExitToast && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 animate-in fade-in zoom-in-95">
-          <div className="bg-slate-900/95 dark:bg-slate-800/95 text-slate-100 text-xs sm:text-sm font-medium px-4 py-2.5 rounded-full shadow-2xl backdrop-blur-md border border-slate-700/60 flex items-center gap-2">
-            <span>Pressione voltar novamente para sair</span>
-          </div>
-        </div>
-      )}
-
       {/* Navegação fixa inferior para mobile */}
       <Navigation
         activeTab={activeTab}
-        setActiveTab={handleTabChange}
+        setActiveTab={changeTab}
       />
 
       {/* Modal de Lançamento / Edição */}
