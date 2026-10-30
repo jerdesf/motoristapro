@@ -43,10 +43,34 @@ export const ThemeProvider = ({ children }) => {
   });
 
   const applyThemeToDOM = (isDark) => {
+    const color = isDark ? '#0a0d14' : '#ffffff';
+
     if (isDark) {
       document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
+    }
+
+    // Sincroniza a barra de status e a barra de navegação do sistema no Android e PWA
+    const metas = document.querySelectorAll('meta[name="theme-color"]');
+    if (metas.length > 0) {
+      metas.forEach((m) => {
+        m.removeAttribute('media');
+        m.setAttribute('content', color);
+      });
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      meta.content = color;
+      document.head.appendChild(meta);
+    }
+
+    // Barra de status no iOS / Safari PWA
+    const appleStatus = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (appleStatus) {
+      appleStatus.setAttribute('content', isDark ? 'black-translucent' : 'default');
     }
   };
 

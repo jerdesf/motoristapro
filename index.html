@@ -9,9 +9,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="MotoristaPRO" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#0a0d14" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0d14" media="(prefers-color-scheme: dark)" />
     <meta name="description" content="Controle financeiro e projeção inteligente para motoristas de aplicativo" />
     <title>MotoristaPRO — Controle de Ganhos</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,10 +29,27 @@
           var sessionTheme = sessionStorage.getItem('motoristapro_session_theme');
           var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
           var isDark = sessionTheme === 'dark' || ((!sessionTheme || sessionTheme === 'system') && systemDark);
+          
           if (isDark) {
             document.documentElement.classList.add('dark');
+            document.documentElement.style.colorScheme = 'dark';
           } else {
             document.documentElement.classList.remove('dark');
+            document.documentElement.style.colorScheme = 'light';
+          }
+
+          var targetColor = isDark ? '#0a0d14' : '#ffffff';
+          var metas = document.querySelectorAll('meta[name="theme-color"]');
+          if (metas.length > 0) {
+            metas.forEach(function(m) {
+              m.removeAttribute('media');
+              m.setAttribute('content', targetColor);
+            });
+          }
+
+          var appleStatus = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+          if (appleStatus) {
+            appleStatus.setAttribute('content', isDark ? 'black-translucent' : 'default');
           }
         } catch (e) {}
 
