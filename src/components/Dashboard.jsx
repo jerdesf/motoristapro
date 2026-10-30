@@ -172,18 +172,12 @@ export default function Dashboard({
                     <div className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                       {formatDateBR(entry.date)} • {entry.dayName}
                     </div>
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Peso {entry.weight}
-                    </div>
                   </div>
                 </div>
 
                 <div className="text-right flex items-center gap-2">
-                  <div>
-                    <div className="text-sm font-bold text-slate-900 dark:text-white mono-numbers">
-                      {entry.netEarnings !== null ? formatCurrency(entry.netEarnings) : '—'}
-                    </div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Líquido</div>
+                  <div className="text-sm font-bold text-slate-900 dark:text-white mono-numbers">
+                    {entry.netEarnings !== null ? formatCurrency(entry.netEarnings) : '—'}
                   </div>
                   <Edit3 className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors" />
                 </div>
