@@ -31,8 +31,20 @@ export default function EntryModal({
 }) {
   if (!isOpen) return null;
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const getOffsetDateStr = (offsetDays) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offsetDays);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = getOffsetDateStr(0);
+  const yesterdayStr = getOffsetDateStr(-1);
   const [date, setDate] = useState(initialEntry?.date || todayStr);
+  const isTodaySelected = date === todayStr;
+  const isYesterdaySelected = date === yesterdayStr;
   const [dayType, setDayType] = useState('Dia útil');
   const [weight, setWeight] = useState(1.0);
 
@@ -99,9 +111,7 @@ export default function EntryModal({
   };
 
   const handleQuickDay = (offsetDays) => {
-    const d = new Date();
-    d.setDate(d.getDate() + offsetDays);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = getOffsetDateStr(offsetDays);
     handleDateChange(dateStr);
   };
 
@@ -223,14 +233,22 @@ export default function EntryModal({
                 <button
                   type="button"
                   onClick={() => handleQuickDay(-1)}
-                  className="px-2.5 py-1 text-xs rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition-colors"
+                  className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all ${
+                    isYesterdaySelected
+                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/40 shadow-sm'
+                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 font-medium'
+                  }`}
                 >
                   Ontem
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickDay(0)}
-                  className="px-2.5 py-1 text-xs rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-semibold transition-colors"
+                  className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-all ${
+                    isTodaySelected
+                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/40 shadow-sm'
+                      : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 font-medium'
+                  }`}
                 >
                   Hoje
                 </button>

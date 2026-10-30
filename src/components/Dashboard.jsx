@@ -217,7 +217,7 @@ export default function Dashboard({
               className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95"
             >
               <PlusCircle className="w-4 h-4" />
-              Lançar Faturamento de Hoje
+              Lançar Faturamento
             </button>
           </div>
         </div>
