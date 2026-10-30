@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
 import Dashboard from './components/Dashboard';
@@ -46,6 +46,17 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+
+  // Refs para controle do gesto Voltar no Android (History API)
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+
+  const isEntryModalOpenRef = useRef(isEntryModalOpen);
+  isEntryModalOpenRef.current = isEntryModalOpen;
+
+  const modalPushedRef = useRef(false);
+  const subviewPushedRef = useRef(false);
+  const isProgrammaticBackRef = useRef(false);
   
   // Status de sincronização com a nuvem Vercel KV / Redis: 'synced' | 'syncing' | 'local' | 'offline'
   const [cloudStatus, setCloudStatus] = useState('synced');
@@ -91,7 +102,7 @@ export default function App() {
     syncWithCloud();
   }, []);
 
-  // Sincronização automática ao focar na janela ou periodicamente a cada 20s
+  // Listener de sincronização periódica a cada 20s
   useEffect(() => {
     const handleFocus = () => syncWithCloud();
     window.addEventListener('focus', handleFocus);
@@ -102,6 +113,64 @@ export default function App() {
       clearInterval(interval);
     };
   }, [syncWithCloud]);
+
+  // Navegação nativa Android com gesto Voltar (History API)
+  useEffect(() => {
+    // Garante que o estado base inicial no histórico seja o dashboard
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({ view: 'dashboard' }, '');
+    }
+
+    const handlePopState = () => {
+      // Se foi disparado programaticamente por nós (ex: ao fechar modal ou mudar de aba via botão), ignora
+      if (isProgrammaticBackRef.current) {
+        isProgrammaticBackRef.current = false;
+        return;
+      }
+
+      // REGRA 1: Se tiver algum card/modal aberto, o gesto de voltar fecha ele
+      if (isEntryModalOpenRef.current) {
+        modalPushedRef.current = false;
+        setIsEntryModalOpen(false);
+        setEditingEntry(null);
+        return;
+      }
+
+      // REGRA 2: Se estiver em outra view que não a primeira (dashboard), volta pra primeira
+      if (activeTabRef.current !== 'dashboard') {
+        subviewPushedRef.current = false;
+        setActiveTab('dashboard');
+        return;
+      }
+
+      // REGRA 3: Se estiver na primeira view (dashboard) e sem modal, o navegador sai do app naturalmente
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Transição de abas sincronizada com o histórico do Android
+  const handleTabChange = useCallback((newTab) => {
+    if (newTab === activeTabRef.current) return;
+
+    if (newTab === 'dashboard') {
+      if (subviewPushedRef.current) {
+        subviewPushedRef.current = false;
+        isProgrammaticBackRef.current = true;
+        window.history.back();
+      }
+      setActiveTab('dashboard');
+    } else {
+      if (!subviewPushedRef.current) {
+        window.history.pushState({ view: newTab }, '');
+        subviewPushedRef.current = true;
+      } else {
+        window.history.replaceState({ view: newTab }, '');
+      }
+      setActiveTab(newTab);
+    }
+  }, []);
 
   // Salvar no localStorage sempre que entries ou settings mudarem
   useEffect(() => {
@@ -126,18 +195,39 @@ export default function App() {
   }, [entries, settings]);
 
   // Abertura do modal para novo lançamento (hoje por padrão)
-  const handleOpenNewEntry = () => {
+  const handleOpenNewEntry = useCallback(() => {
     const todayStr = new Date().toISOString().split('T')[0];
     const existing = entries.find(e => e.date === todayStr);
     setEditingEntry(existing || null);
     setIsEntryModalOpen(true);
-  };
+
+    if (!modalPushedRef.current) {
+      window.history.pushState({ modal: 'entry' }, '');
+      modalPushedRef.current = true;
+    }
+  }, [entries]);
 
   // Abertura do modal para editar dia específico
-  const handleEditEntry = (entry) => {
+  const handleEditEntry = useCallback((entry) => {
     setEditingEntry(entry);
     setIsEntryModalOpen(true);
-  };
+
+    if (!modalPushedRef.current) {
+      window.history.pushState({ modal: 'entry' }, '');
+      modalPushedRef.current = true;
+    }
+  }, []);
+
+  // Fechamento seguro do modal (via botão X, Cancelar ou salvar)
+  const handleCloseModal = useCallback(() => {
+    if (modalPushedRef.current) {
+      modalPushedRef.current = false;
+      isProgrammaticBackRef.current = true;
+      window.history.back();
+    }
+    setIsEntryModalOpen(false);
+    setEditingEntry(null);
+  }, []);
 
   // Salvar ou atualizar lançamento (local + nuvem)
   const handleSaveEntry = (entryData) => {
@@ -160,6 +250,8 @@ export default function App() {
     if (updatedEntries) {
       saveToCloud(updatedEntries, settings);
     }
+
+    handleCloseModal();
   };
 
   // Salvar configurações (local + nuvem)
@@ -187,7 +279,7 @@ export default function App() {
       {/* Header superior */}
       <Header
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         onOpenNewEntry={handleOpenNewEntry}
       />
 
@@ -200,7 +292,7 @@ export default function App() {
             settings={settings}
             onOpenNewEntry={handleOpenNewEntry}
             onEditEntry={handleEditEntry}
-            setActiveTab={setActiveTab}
+            setActiveTab={handleTabChange}
           />
         )}
 
@@ -236,16 +328,13 @@ export default function App() {
       {/* Navegação fixa inferior para mobile */}
       <Navigation
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
       />
 
       {/* Modal de Lançamento / Edição */}
       <EntryModal
         isOpen={isEntryModalOpen}
-        onClose={() => {
-          setIsEntryModalOpen(false);
-          setEditingEntry(null);
-        }}
+        onClose={handleCloseModal}
         initialEntry={editingEntry}
         allEntries={entries}
         onSave={handleSaveEntry}
