@@ -125,8 +125,10 @@ export default function EntryModal({
   const grossNum = parseFlexibleNumber(grossRevenue);
 
   // Gasto com combustível calculado imediatamente se houver KM, Consumo e Preço
-  const hasFuelData = kmNum > 0 && effNum > 0 && priceNum > 0;
-  const fuelLiters = hasFuelData ? (kmNum / effNum) : 0;
+  // Metodologia rigorosa da planilha: consumo efetivo = consumo * 0.95
+  const effectiveEff = effNum * 0.95;
+  const hasFuelData = kmNum > 0 && effectiveEff > 0 && priceNum > 0;
+  const fuelLiters = hasFuelData ? (kmNum / effectiveEff) : 0;
   const fuelCost = hasFuelData ? (fuelLiters * priceNum) : 0;
   const costPerKm = (hasFuelData && kmNum > 0) ? (fuelCost / kmNum) : 0;
 

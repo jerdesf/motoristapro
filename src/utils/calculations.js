@@ -184,14 +184,16 @@ export function calculateMetrics(entries, settings) {
 
 /**
  * Calculadora de combustível detalhada
+ * Segue a metodologia da planilha original: consumo real = consumo informado * 0.95
  */
 export function calculateFuelDetail(grossEarnings, km, efficiency, fuelPrice) {
   const gross = Number(grossEarnings) || 0;
   const kmNum = Number(km) || 0;
   const eff = Number(efficiency) || 0;
   const price = Number(fuelPrice) || 0;
+  const effectiveEff = eff * 0.95;
 
-  if (eff <= 0 || kmNum <= 0) {
+  if (effectiveEff <= 0 || kmNum <= 0) {
     return {
       fuelLiters: 0,
       fuelCost: 0,
@@ -203,7 +205,7 @@ export function calculateFuelDetail(grossEarnings, km, efficiency, fuelPrice) {
     };
   }
 
-  const fuelLiters = kmNum / eff;
+  const fuelLiters = kmNum / effectiveEff;
   const fuelCost = fuelLiters * price;
   const netEarnings = gross - fuelCost;
   const fuelPercentage = gross > 0 ? (fuelCost / gross) * 100 : 0;
