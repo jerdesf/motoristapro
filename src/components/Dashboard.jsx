@@ -101,9 +101,6 @@ export default function Dashboard({
           <div className="text-2xl font-bold text-slate-900 dark:text-white mono-numbers">
             {formatCurrency(metrics.realizedEarnings)}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-            {metrics.filledEntries} períodos registrados
-          </p>
         </div>
 
         {/* Card 2: Custos Decorridos */}
@@ -117,9 +114,6 @@ export default function Dashboard({
           <div className="text-2xl font-bold text-rose-600 dark:text-rose-300 mono-numbers">
             {formatCurrency(metrics.realizedCosts)}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-            {metrics.elapsedDays} dias x {formatCurrency(metrics.dailyCost)}/dia
-          </p>
         </div>
 
         {/* Card 3: Lucro Líquido Atual */}
@@ -133,9 +127,6 @@ export default function Dashboard({
           <div className="text-2xl font-bold text-emerald-600 dark:text-white mono-numbers">
             {formatCurrency(metrics.realizedNetProfit)}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-            Faturamento líquido menos custos até hoje
-          </p>
         </div>
       </div>
 
