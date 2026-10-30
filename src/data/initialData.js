@@ -531,7 +531,7 @@ export const INITIAL_ENTRIES = [
     "dayName": "Quinta-feira",
     "type": "Dia útil",
     "weight": 1,
-    "netEarnings": null
+    "netEarnings": 120.27
   },
   {
     "date": "2026-10-30",
