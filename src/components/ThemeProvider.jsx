@@ -43,7 +43,7 @@ export const ThemeProvider = ({ children }) => {
   });
 
   const applyThemeToDOM = (isDark) => {
-    const color = isDark ? '#0a0d14' : '#ffffff';
+    const color = isDark ? '#111726' : '#ffffff';
 
     if (isDark) {
       document.documentElement.classList.add('dark');
