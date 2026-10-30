@@ -183,7 +183,7 @@ export default function CalendarView({ entries, onEditEntry, metrics }) {
               <div
                 key={date}
                 onClick={() => onEditEntry(entry || { date, type: 'Dia útil', weight: 1.0, netEarnings: null })}
-                className={`min-h-[58px] sm:min-h-[90px] px-1 py-1 sm:p-2 rounded-xl border transition-all cursor-pointer flex flex-col justify-between group overflow-hidden ${
+                className={`min-h-[54px] sm:min-h-[90px] px-0.5 py-1 sm:p-2 rounded-xl border transition-all cursor-pointer flex flex-col justify-between group overflow-hidden ${
                   isPositive
                     ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-500/30 hover:border-emerald-400 hover:bg-emerald-100/70 dark:hover:bg-emerald-950/30'
                     : isZero
@@ -194,7 +194,7 @@ export default function CalendarView({ entries, onEditEntry, metrics }) {
                 }`}
               >
                 {/* Linha superior: Número do dia + Tipo */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between px-0.5 sm:px-0">
                   <span className={`text-[11px] sm:text-xs font-bold leading-none ${
                     isPositive ? 'text-emerald-700 dark:text-emerald-300' : isWeekend ? 'text-purple-700 dark:text-purple-300' : 'text-slate-700 dark:text-slate-300'
                   }`}>
@@ -217,19 +217,22 @@ export default function CalendarView({ entries, onEditEntry, metrics }) {
                 </div>
 
                 {/* Valor ou Status */}
-                <div className="mt-0.5 sm:mt-1">
+                <div className="mt-0.5 sm:mt-1 w-full">
                   {isPositive && (
                     <div className="font-bold text-emerald-700 dark:text-emerald-400 mono-numbers whitespace-nowrap overflow-hidden text-center sm:text-left flex items-baseline justify-center sm:justify-start">
-                      <span className="text-[7.5px] sm:text-[10px] text-emerald-600/80 dark:text-emerald-400/80 mr-0.5 select-none font-semibold">R$</span>
-                      <span className="text-[9.5px] sm:text-xs md:text-sm tracking-tighter sm:tracking-normal">
+                      <span className="text-[6.5px] sm:text-[9px] text-emerald-600/80 dark:text-emerald-400/80 mr-0.5 select-none font-semibold">R$</span>
+                      <span className="text-[8.5px] sm:text-xs md:text-sm tracking-tight sm:tracking-normal">
                         {formatNumber(entry.netEarnings)}
                       </span>
                     </div>
                   )}
 
                   {isZero && (
-                    <div className="text-[8px] sm:text-xs font-semibold text-amber-700 dark:text-amber-400 whitespace-nowrap overflow-hidden text-center sm:text-left tracking-tighter sm:tracking-normal">
-                      Folga (R$0)
+                    <div className="font-bold text-amber-700 dark:text-amber-400 mono-numbers whitespace-nowrap overflow-hidden text-center sm:text-left flex items-baseline justify-center sm:justify-start">
+                      <span className="text-[6.5px] sm:text-[9px] text-amber-600/80 dark:text-amber-400/80 mr-0.5 select-none font-semibold">R$</span>
+                      <span className="text-[8.5px] sm:text-xs md:text-sm tracking-tight sm:tracking-normal">
+                        0,00
+                      </span>
                     </div>
                   )}
 

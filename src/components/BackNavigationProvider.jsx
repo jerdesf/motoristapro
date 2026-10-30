@@ -147,7 +147,22 @@ export const BackNavigationProvider = ({
         return;
       }
 
-      // Regra 3: Se estiver na primeira view e voltar, sai do app (comportamento nativo do Android/PWA)
+      // Regra 3: Se estiver na primeira view e voltar, sai do app definitivamente
+      try {
+        window.close();
+      } catch (e) {}
+
+      // Em navegadores / PWAs no Android que possuem uma página em branco inicial (about:blank),
+      // aciona o retorno subsequente para sair imediatamente sem travar na tela preta
+      try {
+        window.history.back();
+      } catch (e) {}
+
+      setTimeout(() => {
+        try {
+          window.close();
+        } catch (e) {}
+      }, 50);
     };
 
     window.addEventListener("popstate", handlePopState);
