@@ -57,6 +57,19 @@ export default function App() {
   const modalPushedRef = useRef(false);
   const subviewPushedRef = useRef(false);
   const isProgrammaticBackRef = useRef(false);
+  const isExitingRef = useRef(false);
+  const lastBackPressRef = useRef(0);
+
+  // Toast nativo para confirmação de saída do app no Android
+  const [showExitToast, setShowExitToast] = useState(false);
+
+  useEffect(() => {
+    if (!showExitToast) return;
+    const timer = setTimeout(() => {
+      setShowExitToast(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [showExitToast]);
   
   // Status de sincronização com a nuvem Vercel KV / Redis: 'synced' | 'syncing' | 'local' | 'offline'
   const [cloudStatus, setCloudStatus] = useState('synced');
@@ -116,15 +129,21 @@ export default function App() {
 
   // Navegação nativa Android com gesto Voltar (History API)
   useEffect(() => {
-    // Garante que o estado base inicial no histórico seja o dashboard
+    // Garante que o estado base inicial no histórico seja o dashboard com buffer de segurança
     if (typeof window !== 'undefined') {
-      window.history.replaceState({ view: 'dashboard' }, '');
+      window.history.replaceState({ view: 'dashboard', root: true }, '');
+      window.history.pushState({ view: 'dashboard', buffer: true }, '');
     }
 
     const handlePopState = () => {
       // Se foi disparado programaticamente por nós (ex: ao fechar modal ou mudar de aba via botão), ignora
       if (isProgrammaticBackRef.current) {
         isProgrammaticBackRef.current = false;
+        return;
+      }
+
+      // Se já estiver no processo final de encerramento do app, deixa o navegador concluir
+      if (isExitingRef.current) {
         return;
       }
 
@@ -143,7 +162,27 @@ export default function App() {
         return;
       }
 
-      // REGRA 3: Se estiver na primeira view (dashboard) e sem modal, o navegador sai do app naturalmente
+      // REGRA 3: Se já estiver na primeira view (dashboard):
+      // Tenta fechar a janela do PWA diretamente se a plataforma permitir
+      try {
+        window.close();
+      } catch (err) {}
+
+      const now = Date.now();
+      if (now - lastBackPressRef.current < 2000) {
+        // Segundo toque dentro de 2s: sai do app definitivamente sem cair em telas pretas
+        isExitingRef.current = true;
+        try {
+          window.close();
+        } catch (err) {}
+        window.history.back();
+        return;
+      }
+
+      // Primeiro toque: exibe o toast nativo e mantém o buffer no dashboard
+      lastBackPressRef.current = now;
+      setShowExitToast(true);
+      window.history.pushState({ view: 'dashboard', buffer: true }, '');
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -324,6 +363,15 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* Toast flutuante nativo Android: confirmação de saída sem tela preta */}
+      {showExitToast && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 animate-in fade-in zoom-in-95">
+          <div className="bg-slate-900/95 dark:bg-slate-800/95 text-slate-100 text-xs sm:text-sm font-medium px-4 py-2.5 rounded-full shadow-2xl backdrop-blur-md border border-slate-700/60 flex items-center gap-2">
+            <span>Pressione voltar novamente para sair</span>
+          </div>
+        </div>
+      )}
 
       {/* Navegação fixa inferior para mobile */}
       <Navigation

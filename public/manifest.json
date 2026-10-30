@@ -3,6 +3,8 @@
   "short_name": "MotoristaPRO",
   "description": "Controle financeiro e projeção de lucros para motoristas de aplicativo",
   "start_url": "/",
+  "scope": "/",
+  "id": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0a0d14",
