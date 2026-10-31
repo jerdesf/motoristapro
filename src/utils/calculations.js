@@ -130,13 +130,12 @@ export function calculateMetrics(entries, settings) {
   // Média por peso de trabalho
   const avgEarningsPerWeight = sumWeightRealized > 0 ? (realizedEarnings / sumWeightRealized) : 0;
 
-  // Último dia considerado para custos realizados (baseado em dias de trabalho lançados)
-  let lastConsideredDate = startDate;
-  const workEntries = filledEntries.filter(e => e.type !== 'Feriado' || (Number(e.netEarnings) > 0));
-  if (workEntries.length > 0) {
-    const sortedDates = [...workEntries].map(e => e.date).sort();
-    lastConsideredDate = sortedDates[sortedDates.length - 1];
-  }
+  // Data atual considerada para custos realizados: data de HOJE (limitada ao período)
+  const todayStr = getTodayBR();
+  let lastConsideredDate = todayStr;
+  if (startDate && lastConsideredDate < startDate) lastConsideredDate = startDate;
+  if (endDate && lastConsideredDate > endDate) lastConsideredDate = endDate;
+
   const elapsedDays = getDaysDifferenceInclusive(startDate, lastConsideredDate);
   const realizedCosts = elapsedDays * dailyCost;
   const realizedNetProfit = realizedEarnings - realizedCosts;
