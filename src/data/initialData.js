@@ -2,6 +2,9 @@
 export const INITIAL_SETTINGS = {
   monthlyFixedCost: 2727.142857142857,
   carDailyCost: 620 / 7,
+  washingDailyCost: 60 / 45,
+  phoneDailyCost: 30 / 30,
+  tollTagDailyCost: 0,
   extraDailyCost: 60 / 45 + 30 / 30,
   weekendRatio: 0.35,
   weekdayWeight: 1.0,

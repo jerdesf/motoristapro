@@ -96,22 +96,41 @@ export function calculateMetrics(entries, settings) {
     };
   }
 
-  // Custo diário fixo total
+  // Custo diário fixo detalhado: Veículo, Lavagem, Celular e Tag Pedágio
   let carDaily = Number(settings.carDailyCost) || 0;
-  let extraDaily = Number(settings.extraDailyCost) || 0;
+  let washingDaily = settings.washingDailyCost !== undefined 
+    ? Number(settings.washingDailyCost) || 0 
+    : (60 / 45);
+  let phoneDaily = settings.phoneDailyCost !== undefined 
+    ? Number(settings.phoneDailyCost) || 0 
+    : (30 / 30);
+  let tollTagDaily = Number(settings.tollTagDailyCost) || 0;
 
-  // Se os custos vierem com o arredondamento de 2 casas da interface (88.57 e 2.33),
-  // utiliza as frações exatas da planilha original (=620/7 e =60/45+30/30)
-  // garantindo exatidão matemática idêntica ao Excel até os centavos:
+  // Compatibilidade com configurações legadas que tinham apenas extraDailyCost
+  if (settings.washingDailyCost === undefined && settings.phoneDailyCost === undefined && settings.extraDailyCost !== undefined) {
+    let extraDaily = Number(settings.extraDailyCost) || 0;
+    if (Math.abs(extraDaily - 2.33) < 0.05) {
+      washingDaily = 60 / 45;
+      phoneDaily = 30 / 30;
+    } else {
+      washingDaily = extraDaily;
+      phoneDaily = 0;
+    }
+  }
+
+  // Frações exatas da planilha original para precisão matemática até os centavos:
   if (Math.abs(carDaily - 88.57) < 0.005) {
     carDaily = 620 / 7;
   }
-  if (Math.abs(extraDaily - 2.33) < 0.005) {
-    extraDaily = 60 / 45 + 30 / 30;
+  if (Math.abs(washingDaily - 1.33) < 0.005) {
+    washingDaily = 60 / 45;
+  }
+  if (Math.abs(phoneDaily - 1.00) < 0.005) {
+    phoneDaily = 30 / 30;
   }
 
-  const dailyCost = (carDaily + extraDaily) > 0 
-    ? (carDaily + extraDaily) 
+  const dailyCost = (carDaily + washingDaily + phoneDaily + tollTagDaily) > 0 
+    ? (carDaily + washingDaily + phoneDaily + tollTagDaily) 
     : ((Number(settings.monthlyFixedCost) || 0) / 30);
 
   // Período total
@@ -165,6 +184,10 @@ export function calculateMetrics(entries, settings) {
     elapsedDays,
     totalPeriodDays,
     dailyCost,
+    carDailyCost: carDaily,
+    washingDailyCost: washingDaily,
+    phoneDailyCost: phoneDaily,
+    tollTagDailyCost: tollTagDaily,
     realizedEarnings,
     realizedCosts,
     realizedNetProfit,

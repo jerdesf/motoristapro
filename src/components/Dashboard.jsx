@@ -194,14 +194,22 @@ export default function Dashboard({
               Sua Estrutura de Custos
             </h3>
             
-            <div className="space-y-2.5 text-xs">
-              <div className="flex justify-between items-center p-2.5 rounded-xl bg-slate-50 dark:bg-[#161e31] border border-slate-100 dark:border-transparent">
-                <span className="text-slate-600 dark:text-slate-400">Custo diário do veículo:</span>
-                <span className="font-semibold text-slate-900 dark:text-white mono-numbers">{formatCurrency(settings.carDailyCost)}/dia</span>
+            <div className="space-y-2 text-xs">
+              <div className="flex justify-between items-center p-2 rounded-xl bg-slate-50 dark:bg-[#161e31] border border-slate-100 dark:border-transparent">
+                <span className="text-slate-600 dark:text-slate-400">Veículo (aluguel/parcela):</span>
+                <span className="font-semibold text-slate-900 dark:text-white mono-numbers">{formatCurrency(metrics.carDailyCost ?? settings.carDailyCost)}/dia</span>
               </div>
-              <div className="flex justify-between items-center p-2.5 rounded-xl bg-slate-50 dark:bg-[#161e31] border border-slate-100 dark:border-transparent">
-                <span className="text-slate-600 dark:text-slate-400">Lavagem + Celular diário:</span>
-                <span className="font-semibold text-slate-900 dark:text-white mono-numbers">{formatCurrency(settings.extraDailyCost)}/dia</span>
+              <div className="flex justify-between items-center p-2 rounded-xl bg-slate-50 dark:bg-[#161e31] border border-slate-100 dark:border-transparent">
+                <span className="text-slate-600 dark:text-slate-400">Lavagem:</span>
+                <span className="font-semibold text-slate-900 dark:text-white mono-numbers">{formatCurrency(metrics.washingDailyCost ?? (60 / 45))}/dia</span>
+              </div>
+              <div className="flex justify-between items-center p-2 rounded-xl bg-slate-50 dark:bg-[#161e31] border border-slate-100 dark:border-transparent">
+                <span className="text-slate-600 dark:text-slate-400">Celular (internet):</span>
+                <span className="font-semibold text-slate-900 dark:text-white mono-numbers">{formatCurrency(metrics.phoneDailyCost ?? 1)}/dia</span>
+              </div>
+              <div className="flex justify-between items-center p-2 rounded-xl bg-slate-50 dark:bg-[#161e31] border border-slate-100 dark:border-transparent">
+                <span className="text-slate-600 dark:text-slate-400">Tag Pedágio:</span>
+                <span className="font-semibold text-slate-900 dark:text-white mono-numbers">{formatCurrency(metrics.tollTagDailyCost ?? settings.tollTagDailyCost ?? 0)}/dia</span>
               </div>
               <div className="flex justify-between items-center p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
                 <span className="font-semibold text-slate-800 dark:text-slate-200">Total Fixo a cada 30 dias:</span>

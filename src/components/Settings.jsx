@@ -3,7 +3,7 @@ import {
   Settings as SettingsIcon, Save, RotateCcw, 
   Download, Upload, Check, AlertTriangle, ShieldCheck, 
   Fuel, Calendar, Car, Cloud, CloudOff, RefreshCw, Database,
-  Sun, Moon, Laptop
+  Sun, Moon, Laptop, Smartphone, Sparkles, Tag
 } from 'lucide-react';
 import { formatCurrency } from '../utils/calculations';
 import { useTheme } from './ThemeProvider';
@@ -27,6 +27,8 @@ function parseFlexibleNumber(val) {
   if (isNaN(num)) return 0;
   if (Math.abs(num - 88.57) < 0.005) return 620 / 7;
   if (Math.abs(num - 2.33) < 0.005) return 60 / 45 + 30 / 30;
+  if (Math.abs(num - 1.33) < 0.005) return 60 / 45;
+  if (Math.abs(num - 1.00) < 0.005) return 30 / 30;
   return num;
 }
 
@@ -40,15 +42,48 @@ export default function Settings({
   onRefreshCloudConnection
 }) {
   const { theme, resolvedTheme, setTheme } = useTheme();
-  const [formData, setFormData] = useState(() => ({
-    ...settings,
-    carDailyCost: typeof settings.carDailyCost === 'number' 
-      ? (Math.abs(settings.carDailyCost - 620 / 7) < 0.0001 ? '88,57' : settings.carDailyCost) 
-      : settings.carDailyCost,
-    extraDailyCost: typeof settings.extraDailyCost === 'number' 
-      ? (Math.abs(settings.extraDailyCost - (60 / 45 + 1)) < 0.0001 ? '2,33' : settings.extraDailyCost) 
-      : settings.extraDailyCost,
-  }));
+  const [formData, setFormData] = useState(() => {
+    let washing = settings.washingDailyCost;
+    let phone = settings.phoneDailyCost;
+    let tollTag = settings.tollTagDailyCost ?? 0;
+
+    if (washing === undefined && phone === undefined) {
+      if (settings.extraDailyCost !== undefined) {
+        const extraNum = Number(settings.extraDailyCost) || 0;
+        if (Math.abs(extraNum - (60 / 45 + 1)) < 0.05 || Math.abs(extraNum - 2.33) < 0.05) {
+          washing = '1,33';
+          phone = '1,00';
+        } else {
+          washing = String(extraNum).replace('.', ',');
+          phone = '0,00';
+        }
+      } else {
+        washing = '1,33';
+        phone = '1,00';
+      }
+    } else {
+      washing = typeof washing === 'number' 
+        ? (Math.abs(washing - 60 / 45) < 0.001 ? '1,33' : String(washing).replace('.', ',')) 
+        : (washing || '1,33');
+      phone = typeof phone === 'number' 
+        ? (Math.abs(phone - 1) < 0.001 ? '1,00' : String(phone).replace('.', ',')) 
+        : (phone || '1,00');
+    }
+
+    tollTag = typeof tollTag === 'number' 
+      ? (tollTag === 0 ? '0,00' : String(tollTag).replace('.', ',')) 
+      : (tollTag || '0,00');
+
+    return {
+      ...settings,
+      carDailyCost: typeof settings.carDailyCost === 'number' 
+        ? (Math.abs(settings.carDailyCost - 620 / 7) < 0.0001 ? '88,57' : String(settings.carDailyCost).replace('.', ',')) 
+        : (settings.carDailyCost || '88,57'),
+      washingDailyCost: washing,
+      phoneDailyCost: phone,
+      tollTagDailyCost: tollTag,
+    };
+  });
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [syncingNow, setSyncingNow] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState('');
@@ -63,10 +98,19 @@ export default function Settings({
 
   const handleSave = (e) => {
     e.preventDefault();
+    const car = parseFlexibleNumber(formData.carDailyCost);
+    const washing = parseFlexibleNumber(formData.washingDailyCost);
+    const phone = parseFlexibleNumber(formData.phoneDailyCost);
+    const toll = parseFlexibleNumber(formData.tollTagDailyCost);
+    const extra = washing + phone + toll;
+
     onSaveSettings({
       ...formData,
-      carDailyCost: parseFlexibleNumber(formData.carDailyCost),
-      extraDailyCost: parseFlexibleNumber(formData.extraDailyCost),
+      carDailyCost: car,
+      washingDailyCost: washing,
+      phoneDailyCost: phone,
+      tollTagDailyCost: toll,
+      extraDailyCost: extra,
       weekendRatio: parseFlexibleNumber(formData.weekendRatio),
       fuelPrice: parseFlexibleNumber(formData.fuelPrice),
       fuelEfficiency: parseFlexibleNumber(formData.fuelEfficiency),
@@ -137,7 +181,11 @@ export default function Settings({
   };
 
   // Custo por 30 dias calculado em tempo real
-  const dailyTotal = parseFlexibleNumber(formData.carDailyCost) + parseFlexibleNumber(formData.extraDailyCost);
+  const carNum = parseFlexibleNumber(formData.carDailyCost);
+  const washingNum = parseFlexibleNumber(formData.washingDailyCost);
+  const phoneNum = parseFlexibleNumber(formData.phoneDailyCost);
+  const tollNum = parseFlexibleNumber(formData.tollTagDailyCost);
+  const dailyTotal = carNum + washingNum + phoneNum + tollNum;
   const cost30Days = dailyTotal * 30;
 
   return (
@@ -275,17 +323,19 @@ export default function Settings({
       </div>
 
       <form onSubmit={handleSave} className="space-y-5 sm:space-y-6">
-        {/* Bloco 1: Custos Fixos do Veículo */}
+        {/* Bloco 1: Custos Fixos Diários */}
         <div className="bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-xl space-y-4 transition-colors duration-200">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
             <Car className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-            <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Custos Fixos do Veículo</h3>
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">Custos Fixos Diários</h3>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* 1. Custo do Veículo */}
             <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Custo Diário do Carro (R$/dia)
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1 flex items-center gap-1.5">
+                <Car className="w-3.5 h-3.5 text-emerald-500" />
+                Veículo (R$/dia)
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
@@ -298,26 +348,70 @@ export default function Settings({
                 />
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                Equivale a R$ 620,00/semana de aluguel ou parcela
+                Aluguel ou parcela (ex: 88,57/dia = R$ 620/sem)
               </p>
             </div>
 
+            {/* 2. Lavagem */}
             <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Lavagem + Celular Diário (R$/dia)
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                Lavagem (R$/dia)
               </label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={formData.extraDailyCost}
-                  onChange={(e) => handleChange('extraDailyCost', e.target.value)}
+                  value={formData.washingDailyCost}
+                  onChange={(e) => handleChange('washingDailyCost', e.target.value)}
                   className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
                 />
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                Equivale a R$ 70,00 por mês (R$ 2,33/dia)
+                Ex: 1,33/dia (R$ 60 a cada 45 dias)
+              </p>
+            </div>
+
+            {/* 3. Celular */}
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1 flex items-center gap-1.5">
+                <Smartphone className="w-3.5 h-3.5 text-purple-500" />
+                Celular (R$/dia)
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={formData.phoneDailyCost}
+                  onChange={(e) => handleChange('phoneDailyCost', e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Internet e ligações (ex: 1,00/dia = R$ 30/mês)
+              </p>
+            </div>
+
+            {/* 4. Tag Pedágio */}
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1 flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-amber-500" />
+                Tag Pedágio (R$/dia)
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={formData.tollTagDailyCost}
+                  onChange={(e) => handleChange('tollTagDailyCost', e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
+                />
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Mensalidade da tag ou pedágio diário
               </p>
             </div>
           </div>
