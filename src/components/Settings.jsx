@@ -5,31 +5,11 @@ import {
   Fuel, Calendar, Car, Cloud, CloudOff, RefreshCw, Database,
   Sun, Moon, Laptop, Smartphone, Sparkles, Tag
 } from 'lucide-react';
-import { formatCurrency } from '../utils/calculations';
+import { formatCurrency, evaluateMathExpression } from '../utils/calculations';
 import { useTheme } from './ThemeProvider';
 
 function parseFlexibleNumber(val) {
-  if (val === null || val === undefined) return 0;
-  const str = String(val).trim().replace(/\s/g, '');
-  if (!str) return 0;
-  if (str.includes('/')) {
-    const parts = str.split('/');
-    if (parts.length === 2) {
-      const num = parseFloat(parts[0].replace(',', '.'));
-      const den = parseFloat(parts[1].replace(',', '.'));
-      if (!isNaN(num) && !isNaN(den) && den !== 0) {
-        return num / den;
-      }
-    }
-  }
-  const normalized = str.replace(',', '.');
-  const num = parseFloat(normalized);
-  if (isNaN(num)) return 0;
-  if (Math.abs(num - 88.57) < 0.005) return 620 / 7;
-  if (Math.abs(num - 2.33) < 0.005) return 60 / 45 + 30 / 30;
-  if (Math.abs(num - 1.33) < 0.005) return 60 / 45;
-  if (Math.abs(num - 1.00) < 0.005) return 30 / 30;
-  return num;
+  return evaluateMathExpression(val).exact;
 }
 
 export default function Settings({ 
@@ -42,6 +22,15 @@ export default function Settings({
   onRefreshCloudConnection
 }) {
   const { theme, resolvedTheme, setTheme } = useTheme();
+
+  // Fórmulas ativas (para lembrar o que foi digitado com '= x/y')
+  const [formulas, setFormulas] = useState(() => ({
+    carDailyCost: settings.carDailyCostFormula || (Math.abs(Number(settings.carDailyCost) - 620 / 7) < 0.001 ? '= 620/7' : ''),
+    washingDailyCost: settings.washingDailyCostFormula || (Math.abs(Number(settings.washingDailyCost) - 60 / 45) < 0.001 ? '= 60/45' : ''),
+    phoneDailyCost: settings.phoneDailyCostFormula || (Math.abs(Number(settings.phoneDailyCost) - 1) < 0.001 ? '= 30/30' : ''),
+    tollTagDailyCost: settings.tollTagDailyCostFormula || '',
+  }));
+
   const [formData, setFormData] = useState(() => {
     let washing = settings.washingDailyCost;
     let phone = settings.phoneDailyCost;
@@ -63,54 +52,157 @@ export default function Settings({
       }
     } else {
       washing = typeof washing === 'number' 
-        ? (Math.abs(washing - 60 / 45) < 0.001 ? '1,33' : String(washing).replace('.', ',')) 
+        ? (Math.abs(washing - 60 / 45) < 0.001 ? '1,33' : evaluateMathExpression(washing).display) 
         : (washing || '1,33');
       phone = typeof phone === 'number' 
-        ? (Math.abs(phone - 1) < 0.001 ? '1,00' : String(phone).replace('.', ',')) 
+        ? (Math.abs(phone - 1) < 0.001 ? '1,00' : evaluateMathExpression(phone).display) 
         : (phone || '1,00');
     }
 
     tollTag = typeof tollTag === 'number' 
-      ? (tollTag === 0 ? '0,00' : String(tollTag).replace('.', ',')) 
+      ? (tollTag === 0 ? '0,00' : evaluateMathExpression(tollTag).display) 
       : (tollTag || '0,00');
+
+    let carDisplay = typeof settings.carDailyCost === 'number' 
+      ? (Math.abs(settings.carDailyCost - 620 / 7) < 0.0001 ? '88,57' : evaluateMathExpression(settings.carDailyCost).display) 
+      : (settings.carDailyCost || '88,57');
 
     return {
       ...settings,
-      carDailyCost: typeof settings.carDailyCost === 'number' 
-        ? (Math.abs(settings.carDailyCost - 620 / 7) < 0.0001 ? '88,57' : String(settings.carDailyCost).replace('.', ',')) 
-        : (settings.carDailyCost || '88,57'),
+      carDailyCost: carDisplay,
       washingDailyCost: washing,
       phoneDailyCost: phone,
       tollTagDailyCost: tollTag,
+      fuelPrice: settings.fuelPrice !== undefined ? String(settings.fuelPrice).replace('.', ',') : '3,54',
+      fuelEfficiency: settings.fuelEfficiency !== undefined ? String(settings.fuelEfficiency).replace('.', ',') : '8,5',
     };
   });
+
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [syncingNow, setSyncingNow] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState('');
 
   const handleChange = (field, value) => {
-    const cleaned = value.replace(/[^0-9.,/]/g, '');
+    // Permite dígitos, vírgula, ponto, barra, sinal de igual, mais, menos, asterisco e espaços
+    const cleaned = value.replace(/[^0-9.,/=+\-\*\s]/g, '');
     setFormData(prev => ({
       ...prev,
       [field]: cleaned
     }));
+
+    if (cleaned.includes('/') || cleaned.includes('+') || cleaned.includes('*') || cleaned.startsWith('=')) {
+      setFormulas(prev => ({
+        ...prev,
+        [field]: cleaned.startsWith('=') ? cleaned : `= ${cleaned}`
+      }));
+    } else {
+      setFormulas(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
+  };
+
+  const applyFormula = (field, formulaStr) => {
+    const evaluated = evaluateMathExpression(formulaStr);
+    setFormulas(prev => ({
+      ...prev,
+      [field]: formulaStr
+    }));
+    setFormData(prev => ({
+      ...prev,
+      [field]: evaluated.display
+    }));
+  };
+
+  const handleFocus = (field) => {
+    // Se o campo tem uma fórmula associada, carrega a fórmula para edição fácil
+    if (formulas[field]) {
+      setFormData(prev => ({
+        ...prev,
+        [field]: formulas[field]
+      }));
+    }
+  };
+
+  const handleBlur = (field) => {
+    const raw = formData[field];
+    const evaluated = evaluateMathExpression(raw);
+    if (evaluated.formula) {
+      setFormulas(prev => ({
+        ...prev,
+        [field]: evaluated.formula
+      }));
+      setFormData(prev => ({
+        ...prev,
+        [field]: evaluated.display
+      }));
+    } else if (raw && !isNaN(parseFloat(String(raw).replace(',', '.')))) {
+      setFormulas(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+      setFormData(prev => ({
+        ...prev,
+        [field]: evaluated.display
+      }));
+    }
+  };
+
+  const getFieldValues = (field) => {
+    const rawInput = formData[field];
+    const savedFormula = formulas[field];
+
+    // Se o valor digitado atualmente contém fórmula ou operador
+    if (typeof rawInput === 'string' && (rawInput.includes('/') || rawInput.includes('+') || rawInput.includes('*') || rawInput.trim().startsWith('='))) {
+      return evaluateMathExpression(rawInput);
+    }
+
+    // Se o campo está exibindo o valor arredondado mas tem uma fórmula guardada
+    if (savedFormula) {
+      const evalFormula = evaluateMathExpression(savedFormula);
+      return {
+        exact: evalFormula.exact,
+        rounded: evalFormula.rounded,
+        formula: savedFormula,
+        display: evalFormula.display,
+      };
+    }
+
+    // Caso seja apenas um número direto
+    return evaluateMathExpression(rawInput);
   };
 
   const handleSave = (e) => {
     e.preventDefault();
-    const car = parseFlexibleNumber(formData.carDailyCost);
-    const washing = parseFlexibleNumber(formData.washingDailyCost);
-    const phone = parseFlexibleNumber(formData.phoneDailyCost);
-    const toll = parseFlexibleNumber(formData.tollTagDailyCost);
-    const extra = washing + phone + toll;
+    const evalCar = getFieldValues('carDailyCost');
+    const evalWashing = getFieldValues('washingDailyCost');
+    const evalPhone = getFieldValues('phoneDailyCost');
+    const evalToll = getFieldValues('tollTagDailyCost');
+
+    const extraExact = evalWashing.exact + evalPhone.exact + evalToll.exact;
 
     onSaveSettings({
       ...formData,
-      carDailyCost: car,
-      washingDailyCost: washing,
-      phoneDailyCost: phone,
-      tollTagDailyCost: toll,
-      extraDailyCost: extra,
+      // Valores exatos sem arredondamento para todos os cálculos matemáticos:
+      carDailyCost: evalCar.exact,
+      washingDailyCost: evalWashing.exact,
+      phoneDailyCost: evalPhone.exact,
+      tollTagDailyCost: evalToll.exact,
+      extraDailyCost: extraExact,
+
+      // Valores arredondados para exibição:
+      carDailyCostDisplay: evalCar.display,
+      washingDailyCostDisplay: evalWashing.display,
+      phoneDailyCostDisplay: evalPhone.display,
+      tollTagDailyCostDisplay: evalToll.display,
+
+      // Fórmulas salvas para edição futura:
+      carDailyCostFormula: evalCar.formula,
+      washingDailyCostFormula: evalWashing.formula,
+      phoneDailyCostFormula: evalPhone.formula,
+      tollTagDailyCostFormula: evalToll.formula,
+
       weekendRatio: parseFlexibleNumber(formData.weekendRatio),
       fuelPrice: parseFlexibleNumber(formData.fuelPrice),
       fuelEfficiency: parseFlexibleNumber(formData.fuelEfficiency),
@@ -180,11 +272,11 @@ export default function Settings({
     reader.readAsText(file);
   };
 
-  // Custo por 30 dias calculado em tempo real
-  const carNum = parseFlexibleNumber(formData.carDailyCost);
-  const washingNum = parseFlexibleNumber(formData.washingDailyCost);
-  const phoneNum = parseFlexibleNumber(formData.phoneDailyCost);
-  const tollNum = parseFlexibleNumber(formData.tollTagDailyCost);
+  // Custo por 30 dias calculado em tempo real com precisão exata das fórmulas
+  const carNum = getFieldValues('carDailyCost').exact;
+  const washingNum = getFieldValues('washingDailyCost').exact;
+  const phoneNum = getFieldValues('phoneDailyCost').exact;
+  const tollNum = getFieldValues('tollTagDailyCost').exact;
   const dailyTotal = carNum + washingNum + phoneNum + tollNum;
   const cost30Days = dailyTotal * 30;
 
@@ -332,87 +424,195 @@ export default function Settings({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* 1. Custo do Veículo */}
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1 flex items-center gap-1.5">
-                <Car className="w-3.5 h-3.5 text-emerald-500" />
-                Veículo (R$/dia)
-              </label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Car className="w-3.5 h-3.5 text-emerald-500" />
+                  Veículo (R$/dia)
+                </label>
+                {formulas.carDailyCost && !formData.carDailyCost.includes('/') && !formData.carDailyCost.startsWith('=') && (
+                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20" title="Fórmula ativa para cálculos">
+                    {formulas.carDailyCost}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
                 <input
                   type="text"
-                  inputMode="decimal"
                   value={formData.carDailyCost}
                   onChange={(e) => handleChange('carDailyCost', e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
+                  onFocus={() => handleFocus('carDailyCost')}
+                  onBlur={() => handleBlur('carDailyCost')}
+                  placeholder="ex: = 620/7 ou 88,57"
+                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none transition-colors"
                 />
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                Aluguel ou parcela (ex: 88,57/dia = R$ 620/sem)
-              </p>
+              {(formData.carDailyCost.includes('/') || formData.carDailyCost.startsWith('=')) ? (
+                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
+                  <span className="font-bold">Resultado:</span>
+                  <span className="font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold">R$ {evaluateMathExpression(formData.carDailyCost).display}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">(exato: {evaluateMathExpression(formData.carDailyCost).exact.toFixed(4)}...)</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
+                  <span>Aluguel semanal ou parcela</span>
+                  <button
+                    type="button"
+                    onClick={() => applyFormula('carDailyCost', '= 620/7')}
+                    className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-600 border border-slate-200 dark:border-slate-700 transition-colors"
+                    title="Aplicar fórmula = 620/7"
+                  >
+                    = 620/7
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 2. Lavagem */}
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-                Lavagem (R$/dia)
-              </label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                  Lavagem (R$/dia)
+                </label>
+                {formulas.washingDailyCost && !formData.washingDailyCost.includes('/') && !formData.washingDailyCost.startsWith('=') && (
+                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20" title="Fórmula ativa para cálculos">
+                    {formulas.washingDailyCost}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
                 <input
                   type="text"
-                  inputMode="decimal"
                   value={formData.washingDailyCost}
                   onChange={(e) => handleChange('washingDailyCost', e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
+                  onFocus={() => handleFocus('washingDailyCost')}
+                  onBlur={() => handleBlur('washingDailyCost')}
+                  placeholder="ex: = 60/45 ou 1,33"
+                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none transition-colors"
                 />
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                Ex: 1,33/dia (R$ 60 a cada 45 dias)
-              </p>
+              {(formData.washingDailyCost.includes('/') || formData.washingDailyCost.startsWith('=')) ? (
+                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
+                  <span className="font-bold">Resultado:</span>
+                  <span className="font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold">R$ {evaluateMathExpression(formData.washingDailyCost).display}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">(exato: {evaluateMathExpression(formData.washingDailyCost).exact.toFixed(4)}...)</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
+                  <span>R$ 60 a cada 45 dias</span>
+                  <button
+                    type="button"
+                    onClick={() => applyFormula('washingDailyCost', '= 60/45')}
+                    className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-600 border border-slate-200 dark:border-slate-700 transition-colors"
+                    title="Aplicar fórmula = 60/45"
+                  >
+                    = 60/45
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 3. Celular */}
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1 flex items-center gap-1.5">
-                <Smartphone className="w-3.5 h-3.5 text-purple-500" />
-                Celular (R$/dia)
-              </label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Smartphone className="w-3.5 h-3.5 text-purple-500" />
+                  Celular (R$/dia)
+                </label>
+                {formulas.phoneDailyCost && !formData.phoneDailyCost.includes('/') && !formData.phoneDailyCost.startsWith('=') && (
+                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20" title="Fórmula ativa para cálculos">
+                    {formulas.phoneDailyCost}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
                 <input
                   type="text"
-                  inputMode="decimal"
                   value={formData.phoneDailyCost}
                   onChange={(e) => handleChange('phoneDailyCost', e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
+                  onFocus={() => handleFocus('phoneDailyCost')}
+                  onBlur={() => handleBlur('phoneDailyCost')}
+                  placeholder="ex: = 30/30 ou 1,00"
+                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none transition-colors"
                 />
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                Internet e ligações (ex: 1,00/dia = R$ 30/mês)
-              </p>
+              {(formData.phoneDailyCost.includes('/') || formData.phoneDailyCost.startsWith('=')) ? (
+                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
+                  <span className="font-bold">Resultado:</span>
+                  <span className="font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold">R$ {evaluateMathExpression(formData.phoneDailyCost).display}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">(exato: {evaluateMathExpression(formData.phoneDailyCost).exact.toFixed(4)}...)</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
+                  <span>R$ 30 mensal de plano</span>
+                  <button
+                    type="button"
+                    onClick={() => applyFormula('phoneDailyCost', '= 30/30')}
+                    className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-600 border border-slate-200 dark:border-slate-700 transition-colors"
+                    title="Aplicar fórmula = 30/30"
+                  >
+                    = 30/30
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 4. Tag Pedágio */}
-            <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1 flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5 text-amber-500" />
-                Tag Pedágio (R$/dia)
-              </label>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5 text-amber-500" />
+                  Tag Pedágio (R$/dia)
+                </label>
+                {formulas.tollTagDailyCost && !formData.tollTagDailyCost.includes('/') && !formData.tollTagDailyCost.startsWith('=') && (
+                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20" title="Fórmula ativa para cálculos">
+                    {formulas.tollTagDailyCost}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
                 <input
                   type="text"
-                  inputMode="decimal"
                   value={formData.tollTagDailyCost}
                   onChange={(e) => handleChange('tollTagDailyCost', e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
+                  onFocus={() => handleFocus('tollTagDailyCost')}
+                  onBlur={() => handleBlur('tollTagDailyCost')}
+                  placeholder="ex: = 15/30 ou 0,50"
+                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none transition-colors"
                 />
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                Mensalidade da tag ou pedágio diário
-              </p>
+              {(formData.tollTagDailyCost.includes('/') || formData.tollTagDailyCost.startsWith('=')) ? (
+                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
+                  <span className="font-bold">Resultado:</span>
+                  <span className="font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold">R$ {evaluateMathExpression(formData.tollTagDailyCost).display}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">(exato: {evaluateMathExpression(formData.tollTagDailyCost).exact.toFixed(4)}...)</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
+                  <span>Mensalidade ou diário</span>
+                  <button
+                    type="button"
+                    onClick={() => applyFormula('tollTagDailyCost', '= 15/30')}
+                    className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-600 border border-slate-200 dark:border-slate-700 transition-colors"
+                    title="Aplicar fórmula = 15/30"
+                  >
+                    = 15/30
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Dica de fórmulas e precisão matemática */}
+          <div className="px-3.5 py-2.5 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
+            <span className="text-base select-none">💡</span>
+            <div className="leading-relaxed">
+              <strong>Suporte a fórmulas no estilo Excel:</strong> você pode digitar fórmulas como <code className="font-mono bg-emerald-500/10 dark:bg-emerald-500/20 px-1 py-0.5 rounded">= 620/7</code>, <code className="font-mono bg-emerald-500/10 dark:bg-emerald-500/20 px-1 py-0.5 rounded">= 60/45</code> ou qualquer conta. O app exibe o valor arredondado no campo, mas mantém e realiza todos os cálculos de lucros e custos com o valor exato sem arredondamento, garantindo 100% de fidelidade aos centavos.
             </div>
           </div>
 

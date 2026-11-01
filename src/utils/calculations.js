@@ -3,6 +3,65 @@
  * Baseado rigorosamente na metodologia da planilha original.
  */
 
+/**
+ * Avalia expressões matemáticas no estilo planilha (ex: "= 620/7", "60/45", "88,57").
+ * Retorna o valor exato sem arredondamento para cálculos (exact)
+ * e o valor arredondado em 2 casas para exibição e salvamento (rounded).
+ */
+export function evaluateMathExpression(val) {
+  if (val === null || val === undefined) return { exact: 0, rounded: 0, formula: '', display: '0,00' };
+  if (typeof val === 'number') {
+    if (isNaN(val)) return { exact: 0, rounded: 0, formula: '', display: '0,00' };
+    const rounded = Math.round(val * 100) / 100;
+    return {
+      exact: val,
+      rounded,
+      formula: '',
+      display: rounded.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    };
+  }
+
+  let str = String(val).trim();
+  if (!str) return { exact: 0, rounded: 0, formula: '', display: '0,00' };
+
+  const hasEqualSign = str.startsWith('=');
+  let cleanStr = str.replace(/^=\s*/, '').trim();
+
+  // Substitui vírgula decimal por ponto:
+  const sanitized = cleanStr.replace(/,/g, '.').replace(/\s+/g, '');
+
+  if (/^[\d.+*/()-]+$/.test(sanitized)) {
+    try {
+      const result = Function(`'use strict'; return (${sanitized})`)();
+      if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
+        const rounded = Math.round(result * 100) / 100;
+        const formula = str.includes('/') || str.includes('+') || str.includes('*') || hasEqualSign 
+          ? (hasEqualSign ? str : `= ${str}`) 
+          : '';
+        return {
+          exact: result,
+          rounded,
+          formula,
+          display: rounded.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        };
+      }
+    } catch (e) {}
+  }
+
+  const normalNum = parseFloat(cleanStr.replace(',', '.'));
+  if (!isNaN(normalNum)) {
+    const rounded = Math.round(normalNum * 100) / 100;
+    return {
+      exact: normalNum,
+      rounded,
+      formula: hasEqualSign ? str : '',
+      display: rounded.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    };
+  }
+
+  return { exact: 0, rounded: 0, formula: '', display: '0,00' };
+}
+
 export function parseDate(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
   return new Date(y, m - 1, d);
@@ -97,18 +156,21 @@ export function calculateMetrics(entries, settings) {
   }
 
   // Custo diário fixo detalhado: Veículo, Lavagem, Celular e Tag Pedágio
-  let carDaily = Number(settings.carDailyCost) || 0;
+  // Avalia com precisão máxima sem arredondamento (suporta fórmulas '= x/y' e frações):
+  let carDaily = evaluateMathExpression(settings.carDailyCost).exact;
   let washingDaily = settings.washingDailyCost !== undefined 
-    ? Number(settings.washingDailyCost) || 0 
+    ? evaluateMathExpression(settings.washingDailyCost).exact 
     : (60 / 45);
   let phoneDaily = settings.phoneDailyCost !== undefined 
-    ? Number(settings.phoneDailyCost) || 0 
+    ? evaluateMathExpression(settings.phoneDailyCost).exact 
     : (30 / 30);
-  let tollTagDaily = Number(settings.tollTagDailyCost) || 0;
+  let tollTagDaily = settings.tollTagDailyCost !== undefined
+    ? evaluateMathExpression(settings.tollTagDailyCost).exact
+    : 0;
 
   // Compatibilidade com configurações legadas que tinham apenas extraDailyCost
   if (settings.washingDailyCost === undefined && settings.phoneDailyCost === undefined && settings.extraDailyCost !== undefined) {
-    let extraDaily = Number(settings.extraDailyCost) || 0;
+    let extraDaily = evaluateMathExpression(settings.extraDailyCost).exact;
     if (Math.abs(extraDaily - 2.33) < 0.05) {
       washingDaily = 60 / 45;
       phoneDaily = 30 / 30;
@@ -118,14 +180,14 @@ export function calculateMetrics(entries, settings) {
     }
   }
 
-  // Frações exatas da planilha original para precisão matemática até os centavos:
-  if (Math.abs(carDaily - 88.57) < 0.005) {
+  // Preserva as frações exatas da planilha original (=620/7 e =60/45) se vier valor arredondado legado:
+  if (Math.abs(carDaily - 88.57) < 0.005 && !settings.carDailyCostFormula) {
     carDaily = 620 / 7;
   }
-  if (Math.abs(washingDaily - 1.33) < 0.005) {
+  if (Math.abs(washingDaily - 1.33) < 0.005 && !settings.washingDailyCostFormula) {
     washingDaily = 60 / 45;
   }
-  if (Math.abs(phoneDaily - 1.00) < 0.005) {
+  if (Math.abs(phoneDaily - 1.00) < 0.005 && !settings.phoneDailyCostFormula) {
     phoneDaily = 30 / 30;
   }
 
