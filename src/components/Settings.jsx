@@ -448,23 +448,11 @@ export default function Settings({
                   className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none transition-colors"
                 />
               </div>
-              {(formData.carDailyCost.includes('/') || formData.carDailyCost.startsWith('=')) ? (
+              {(formData.carDailyCost.includes('/') || formData.carDailyCost.startsWith('=')) && (
                 <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
                   <span className="font-bold">Resultado:</span>
                   <span className="font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold">R$ {evaluateMathExpression(formData.carDailyCost).display}</span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500">(exato: {evaluateMathExpression(formData.carDailyCost).exact.toFixed(4)}...)</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
-                  <span>Aluguel semanal ou parcela</span>
-                  <button
-                    type="button"
-                    onClick={() => applyFormula('carDailyCost', '= 620/7')}
-                    className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-600 border border-slate-200 dark:border-slate-700 transition-colors"
-                    title="Aplicar fórmula = 620/7"
-                  >
-                    = 620/7
-                  </button>
                 </div>
               )}
             </div>
@@ -494,23 +482,11 @@ export default function Settings({
                   className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none transition-colors"
                 />
               </div>
-              {(formData.washingDailyCost.includes('/') || formData.washingDailyCost.startsWith('=')) ? (
+              {(formData.washingDailyCost.includes('/') || formData.washingDailyCost.startsWith('=')) && (
                 <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
                   <span className="font-bold">Resultado:</span>
                   <span className="font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold">R$ {evaluateMathExpression(formData.washingDailyCost).display}</span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500">(exato: {evaluateMathExpression(formData.washingDailyCost).exact.toFixed(4)}...)</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
-                  <span>R$ 60 a cada 45 dias</span>
-                  <button
-                    type="button"
-                    onClick={() => applyFormula('washingDailyCost', '= 60/45')}
-                    className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-600 border border-slate-200 dark:border-slate-700 transition-colors"
-                    title="Aplicar fórmula = 60/45"
-                  >
-                    = 60/45
-                  </button>
                 </div>
               )}
             </div>
@@ -540,23 +516,11 @@ export default function Settings({
                   className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none transition-colors"
                 />
               </div>
-              {(formData.phoneDailyCost.includes('/') || formData.phoneDailyCost.startsWith('=')) ? (
+              {(formData.phoneDailyCost.includes('/') || formData.phoneDailyCost.startsWith('=')) && (
                 <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
                   <span className="font-bold">Resultado:</span>
                   <span className="font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold">R$ {evaluateMathExpression(formData.phoneDailyCost).display}</span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500">(exato: {evaluateMathExpression(formData.phoneDailyCost).exact.toFixed(4)}...)</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
-                  <span>R$ 30 mensal de plano</span>
-                  <button
-                    type="button"
-                    onClick={() => applyFormula('phoneDailyCost', '= 30/30')}
-                    className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-600 border border-slate-200 dark:border-slate-700 transition-colors"
-                    title="Aplicar fórmula = 30/30"
-                  >
-                    = 30/30
-                  </button>
                 </div>
               )}
             </div>
@@ -586,23 +550,11 @@ export default function Settings({
                   className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none transition-colors"
                 />
               </div>
-              {(formData.tollTagDailyCost.includes('/') || formData.tollTagDailyCost.startsWith('=')) ? (
+              {(formData.tollTagDailyCost.includes('/') || formData.tollTagDailyCost.startsWith('=')) && (
                 <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
                   <span className="font-bold">Resultado:</span>
                   <span className="font-mono bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold">R$ {evaluateMathExpression(formData.tollTagDailyCost).display}</span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500">(exato: {evaluateMathExpression(formData.tollTagDailyCost).exact.toFixed(4)}...)</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
-                  <span>Mensalidade ou diário</span>
-                  <button
-                    type="button"
-                    onClick={() => applyFormula('tollTagDailyCost', '= 15/30')}
-                    className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-600 border border-slate-200 dark:border-slate-700 transition-colors"
-                    title="Aplicar fórmula = 15/30"
-                  >
-                    = 15/30
-                  </button>
                 </div>
               )}
             </div>
