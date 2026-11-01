@@ -81,6 +81,8 @@ export default function Settings({
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [syncingNow, setSyncingNow] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState('');
+  const [modifiedFields, setModifiedFields] = useState({});
+  const [savedFields, setSavedFields] = useState({});
 
   const handleChange = (field, value) => {
     // Permite dígitos, vírgula, ponto, barra, sinal de igual, mais, menos, asterisco e espaços
@@ -88,6 +90,11 @@ export default function Settings({
     setFormData(prev => ({
       ...prev,
       [field]: cleaned
+    }));
+
+    setModifiedFields(prev => ({
+      ...prev,
+      [field]: true
     }));
 
     if (cleaned.includes('/') || cleaned.includes('+') || cleaned.includes('*') || cleaned.startsWith('=')) {
@@ -109,10 +116,12 @@ export default function Settings({
       ...prev,
       [field]: formulaStr
     }));
-    setFormData(prev => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [field]: evaluated.display
-    }));
+    };
+    setFormData(newFormData);
+    saveAllSettings(newFormData, field);
   };
 
   const handleFocus = (field) => {
@@ -125,32 +134,8 @@ export default function Settings({
     }
   };
 
-  const handleBlur = (field) => {
-    const raw = formData[field];
-    const evaluated = evaluateMathExpression(raw);
-    if (evaluated.formula) {
-      setFormulas(prev => ({
-        ...prev,
-        [field]: evaluated.formula
-      }));
-      setFormData(prev => ({
-        ...prev,
-        [field]: evaluated.display
-      }));
-    } else if (raw && !isNaN(parseFloat(String(raw).replace(',', '.')))) {
-      setFormulas(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-      setFormData(prev => ({
-        ...prev,
-        [field]: evaluated.display
-      }));
-    }
-  };
-
-  const getFieldValues = (field) => {
-    const rawInput = formData[field];
+  const getFieldValues = (field, currentFormData = formData) => {
+    const rawInput = currentFormData[field];
     const savedFormula = formulas[field];
 
     // Se o valor digitado atualmente contém fórmula ou operador
@@ -173,17 +158,17 @@ export default function Settings({
     return evaluateMathExpression(rawInput);
   };
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    const evalCar = getFieldValues('carDailyCost');
-    const evalWashing = getFieldValues('washingDailyCost');
-    const evalPhone = getFieldValues('phoneDailyCost');
-    const evalToll = getFieldValues('tollTagDailyCost');
+  const saveAllSettings = (overrideFormData = null, specificField = null) => {
+    const currentData = overrideFormData || formData;
+    const evalCar = getFieldValues('carDailyCost', currentData);
+    const evalWashing = getFieldValues('washingDailyCost', currentData);
+    const evalPhone = getFieldValues('phoneDailyCost', currentData);
+    const evalToll = getFieldValues('tollTagDailyCost', currentData);
 
     const extraExact = evalWashing.exact + evalPhone.exact + evalToll.exact;
 
     onSaveSettings({
-      ...formData,
+      ...currentData,
       // Valores exatos sem arredondamento para todos os cálculos matemáticos:
       carDailyCost: evalCar.exact,
       washingDailyCost: evalWashing.exact,
@@ -203,12 +188,87 @@ export default function Settings({
       phoneDailyCostFormula: evalPhone.formula,
       tollTagDailyCostFormula: evalToll.formula,
 
-      weekendRatio: parseFlexibleNumber(formData.weekendRatio),
-      fuelPrice: parseFlexibleNumber(formData.fuelPrice),
-      fuelEfficiency: parseFlexibleNumber(formData.fuelEfficiency),
+      weekendRatio: parseFlexibleNumber(currentData.weekendRatio),
+      fuelPrice: parseFlexibleNumber(currentData.fuelPrice),
+      fuelEfficiency: parseFlexibleNumber(currentData.fuelEfficiency),
     });
+
+    if (specificField) {
+      setModifiedFields(prev => ({ ...prev, [specificField]: false }));
+      setSavedFields(prev => ({ ...prev, [specificField]: true }));
+      setTimeout(() => {
+        setSavedFields(prev => ({ ...prev, [specificField]: false }));
+      }, 2500);
+    } else {
+      setModifiedFields({});
+      setSavedFields({
+        carDailyCost: true,
+        washingDailyCost: true,
+        phoneDailyCost: true,
+        tollTagDailyCost: true,
+        fuelPrice: true,
+        fuelEfficiency: true,
+        startDate: true,
+        endDate: true,
+        weekendRatio: true,
+      });
+      setTimeout(() => {
+        setSavedFields({});
+      }, 2500);
+    }
+
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 3000);
+  };
+
+  const handleBlur = (field) => {
+    const raw = formData[field];
+    const evaluated = evaluateMathExpression(raw);
+    let updatedFormData = { ...formData };
+
+    if (['carDailyCost', 'washingDailyCost', 'phoneDailyCost', 'tollTagDailyCost'].includes(field)) {
+      if (evaluated.formula) {
+        setFormulas(prev => ({
+          ...prev,
+          [field]: evaluated.formula
+        }));
+        updatedFormData[field] = evaluated.display;
+        setFormData(prev => ({
+          ...prev,
+          [field]: evaluated.display
+        }));
+      } else if (raw && !isNaN(parseFloat(String(raw).replace(',', '.')))) {
+        setFormulas(prev => ({
+          ...prev,
+          [field]: ''
+        }));
+        updatedFormData[field] = evaluated.display;
+        setFormData(prev => ({
+          ...prev,
+          [field]: evaluated.display
+        }));
+      }
+    } else if (field === 'fuelPrice' || field === 'fuelEfficiency') {
+      const num = parseFloat(String(raw).replace(',', '.'));
+      if (!isNaN(num)) {
+        const formatted = String(raw).trim();
+        updatedFormData[field] = formatted;
+        setFormData(prev => ({
+          ...prev,
+          [field]: formatted
+        }));
+      }
+    }
+
+    // Se o campo foi modificado, salva automaticamente ao sair do campo e dá feedback visual
+    if (modifiedFields[field]) {
+      saveAllSettings(updatedFormData, field);
+    }
+  };
+
+  const handleSave = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    saveAllSettings();
   };
 
   const handleManualSync = async () => {
@@ -430,11 +490,21 @@ export default function Settings({
                   <Car className="w-3.5 h-3.5 text-emerald-500" />
                   Veículo (R$/dia)
                 </label>
-                {formulas.carDailyCost && !formData.carDailyCost.includes('/') && !formData.carDailyCost.startsWith('=') && (
-                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20" title="Fórmula ativa para cálculos">
-                    {formulas.carDailyCost}
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {savedFields.carDailyCost ? (
+                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 dark:bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-fadeIn">
+                      <Check className="w-3 h-3 stroke-[3]" /> Salvo
+                    </span>
+                  ) : modifiedFields.carDailyCost ? (
+                    <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 animate-fadeIn">
+                      Alterado
+                    </span>
+                  ) : formulas.carDailyCost && !formData.carDailyCost.includes('/') && !formData.carDailyCost.startsWith('=') ? (
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700" title="Fórmula ativa para cálculos">
+                      {formulas.carDailyCost}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
@@ -444,9 +514,21 @@ export default function Settings({
                   onChange={(e) => handleChange('carDailyCost', e.target.value)}
                   onFocus={() => handleFocus('carDailyCost')}
                   onBlur={() => handleBlur('carDailyCost')}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
                   placeholder="ex: = 620/7 ou 88,57"
-                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none transition-colors"
+                  className={`w-full bg-slate-50 dark:bg-[#161e31] border rounded-xl pl-9 pr-9 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:outline-none transition-all duration-200 ${
+                    savedFields.carDailyCost 
+                      ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20'
+                      : modifiedFields.carDailyCost
+                      ? 'border-amber-400 ring-2 ring-amber-400/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:border-emerald-500'
+                  }`}
                 />
+                {savedFields.carDailyCost && (
+                  <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-emerald-500 animate-fadeIn pointer-events-none">
+                    <Check className="w-4 h-4 stroke-[3]" />
+                  </span>
+                )}
               </div>
               {(formData.carDailyCost.includes('/') || formData.carDailyCost.startsWith('=')) && (
                 <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
@@ -464,11 +546,21 @@ export default function Settings({
                   <Sparkles className="w-3.5 h-3.5 text-blue-500" />
                   Lavagem (R$/dia)
                 </label>
-                {formulas.washingDailyCost && !formData.washingDailyCost.includes('/') && !formData.washingDailyCost.startsWith('=') && (
-                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20" title="Fórmula ativa para cálculos">
-                    {formulas.washingDailyCost}
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {savedFields.washingDailyCost ? (
+                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 dark:bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-fadeIn">
+                      <Check className="w-3 h-3 stroke-[3]" /> Salvo
+                    </span>
+                  ) : modifiedFields.washingDailyCost ? (
+                    <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 animate-fadeIn">
+                      Alterado
+                    </span>
+                  ) : formulas.washingDailyCost && !formData.washingDailyCost.includes('/') && !formData.washingDailyCost.startsWith('=') ? (
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700" title="Fórmula ativa para cálculos">
+                      {formulas.washingDailyCost}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
@@ -478,9 +570,21 @@ export default function Settings({
                   onChange={(e) => handleChange('washingDailyCost', e.target.value)}
                   onFocus={() => handleFocus('washingDailyCost')}
                   onBlur={() => handleBlur('washingDailyCost')}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
                   placeholder="ex: = 60/45 ou 1,33"
-                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none transition-colors"
+                  className={`w-full bg-slate-50 dark:bg-[#161e31] border rounded-xl pl-9 pr-9 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:outline-none transition-all duration-200 ${
+                    savedFields.washingDailyCost 
+                      ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20'
+                      : modifiedFields.washingDailyCost
+                      ? 'border-amber-400 ring-2 ring-amber-400/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:border-emerald-500'
+                  }`}
                 />
+                {savedFields.washingDailyCost && (
+                  <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-emerald-500 animate-fadeIn pointer-events-none">
+                    <Check className="w-4 h-4 stroke-[3]" />
+                  </span>
+                )}
               </div>
               {(formData.washingDailyCost.includes('/') || formData.washingDailyCost.startsWith('=')) && (
                 <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
@@ -498,11 +602,21 @@ export default function Settings({
                   <Smartphone className="w-3.5 h-3.5 text-purple-500" />
                   Celular (R$/dia)
                 </label>
-                {formulas.phoneDailyCost && !formData.phoneDailyCost.includes('/') && !formData.phoneDailyCost.startsWith('=') && (
-                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20" title="Fórmula ativa para cálculos">
-                    {formulas.phoneDailyCost}
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {savedFields.phoneDailyCost ? (
+                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 dark:bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-fadeIn">
+                      <Check className="w-3 h-3 stroke-[3]" /> Salvo
+                    </span>
+                  ) : modifiedFields.phoneDailyCost ? (
+                    <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 animate-fadeIn">
+                      Alterado
+                    </span>
+                  ) : formulas.phoneDailyCost && !formData.phoneDailyCost.includes('/') && !formData.phoneDailyCost.startsWith('=') ? (
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700" title="Fórmula ativa para cálculos">
+                      {formulas.phoneDailyCost}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
@@ -512,9 +626,21 @@ export default function Settings({
                   onChange={(e) => handleChange('phoneDailyCost', e.target.value)}
                   onFocus={() => handleFocus('phoneDailyCost')}
                   onBlur={() => handleBlur('phoneDailyCost')}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
                   placeholder="ex: = 30/30 ou 1,00"
-                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none transition-colors"
+                  className={`w-full bg-slate-50 dark:bg-[#161e31] border rounded-xl pl-9 pr-9 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:outline-none transition-all duration-200 ${
+                    savedFields.phoneDailyCost 
+                      ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20'
+                      : modifiedFields.phoneDailyCost
+                      ? 'border-amber-400 ring-2 ring-amber-400/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:border-emerald-500'
+                  }`}
                 />
+                {savedFields.phoneDailyCost && (
+                  <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-emerald-500 animate-fadeIn pointer-events-none">
+                    <Check className="w-4 h-4 stroke-[3]" />
+                  </span>
+                )}
               </div>
               {(formData.phoneDailyCost.includes('/') || formData.phoneDailyCost.startsWith('=')) && (
                 <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
@@ -532,11 +658,21 @@ export default function Settings({
                   <Tag className="w-3.5 h-3.5 text-amber-500" />
                   Tag Pedágio (R$/dia)
                 </label>
-                {formulas.tollTagDailyCost && !formData.tollTagDailyCost.includes('/') && !formData.tollTagDailyCost.startsWith('=') && (
-                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20" title="Fórmula ativa para cálculos">
-                    {formulas.tollTagDailyCost}
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {savedFields.tollTagDailyCost ? (
+                    <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 dark:bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-fadeIn">
+                      <Check className="w-3 h-3 stroke-[3]" /> Salvo
+                    </span>
+                  ) : modifiedFields.tollTagDailyCost ? (
+                    <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 animate-fadeIn">
+                      Alterado
+                    </span>
+                  ) : formulas.tollTagDailyCost && !formData.tollTagDailyCost.includes('/') && !formData.tollTagDailyCost.startsWith('=') ? (
+                    <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700" title="Fórmula ativa para cálculos">
+                      {formulas.tollTagDailyCost}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
@@ -546,9 +682,21 @@ export default function Settings({
                   onChange={(e) => handleChange('tollTagDailyCost', e.target.value)}
                   onFocus={() => handleFocus('tollTagDailyCost')}
                   onBlur={() => handleBlur('tollTagDailyCost')}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
                   placeholder="ex: = 15/30 ou 0,50"
-                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none transition-colors"
+                  className={`w-full bg-slate-50 dark:bg-[#161e31] border rounded-xl pl-9 pr-9 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:outline-none transition-all duration-200 ${
+                    savedFields.tollTagDailyCost 
+                      ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20'
+                      : modifiedFields.tollTagDailyCost
+                      ? 'border-amber-400 ring-2 ring-amber-400/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:border-emerald-500'
+                  }`}
                 />
+                {savedFields.tollTagDailyCost && (
+                  <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-emerald-500 animate-fadeIn pointer-events-none">
+                    <Check className="w-4 h-4 stroke-[3]" />
+                  </span>
+                )}
               </div>
               {(formData.tollTagDailyCost.includes('/') || formData.tollTagDailyCost.startsWith('=')) && (
                 <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
@@ -564,7 +712,7 @@ export default function Settings({
           <div className="px-3.5 py-2.5 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
             <span className="text-base select-none">💡</span>
             <div className="leading-relaxed">
-              <strong>Suporte a fórmulas no estilo Excel:</strong> você pode digitar fórmulas como <code className="font-mono bg-emerald-500/10 dark:bg-emerald-500/20 px-1 py-0.5 rounded">= 620/7</code>, <code className="font-mono bg-emerald-500/10 dark:bg-emerald-500/20 px-1 py-0.5 rounded">= 60/45</code> ou qualquer conta. O app exibe o valor arredondado no campo, mas mantém e realiza todos os cálculos de lucros e custos com o valor exato sem arredondamento, garantindo 100% de fidelidade aos centavos.
+              <strong>Suporte a fórmulas no estilo Excel:</strong> você pode digitar fórmulas como <code className="font-mono bg-emerald-500/10 dark:bg-emerald-500/20 px-1 py-0.5 rounded">= 620/7</code>, <code className="font-mono bg-emerald-500/10 dark:bg-emerald-500/20 px-1 py-0.5 rounded">= 60/45</code> ou qualquer conta. Ao sair do campo ou pressionar Enter, o valor é salvo automaticamente com confirmação visual, e os cálculos usam o número exato sem arredondamento.
             </div>
           </div>
 
@@ -586,9 +734,20 @@ export default function Settings({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Preço Padrão do Combustível (R$/litro)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Preço Padrão do Combustível (R$/litro)
+                </label>
+                {savedFields.fuelPrice ? (
+                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 dark:bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-fadeIn">
+                    <Check className="w-3 h-3 stroke-[3]" /> Salvo
+                  </span>
+                ) : modifiedFields.fuelPrice ? (
+                  <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20 animate-fadeIn">
+                    Alterado
+                  </span>
+                ) : null}
+              </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 font-bold">R$</span>
                 <input
@@ -596,15 +755,39 @@ export default function Settings({
                   inputMode="decimal"
                   value={formData.fuelPrice}
                   onChange={(e) => handleChange('fuelPrice', e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
+                  onBlur={() => handleBlur('fuelPrice')}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+                  className={`w-full bg-slate-50 dark:bg-[#161e31] border rounded-xl pl-9 pr-9 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:outline-none transition-all duration-200 ${
+                    savedFields.fuelPrice 
+                      ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20'
+                      : modifiedFields.fuelPrice
+                      ? 'border-amber-400 ring-2 ring-amber-400/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:border-emerald-500'
+                  }`}
                 />
+                {savedFields.fuelPrice && (
+                  <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-emerald-500 animate-fadeIn pointer-events-none">
+                    <Check className="w-4 h-4 stroke-[3]" />
+                  </span>
+                )}
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Consumo Médio do Carro (km/litro)
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Consumo Médio do Carro (km/litro)
+                </label>
+                {savedFields.fuelEfficiency ? (
+                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/15 dark:bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1 animate-fadeIn">
+                    <Check className="w-3 h-3 stroke-[3]" /> Salvo
+                  </span>
+                ) : modifiedFields.fuelEfficiency ? (
+                  <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20 animate-fadeIn">
+                    Alterado
+                  </span>
+                ) : null}
+              </div>
               <div className="relative">
                 <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-slate-400">km/l</span>
                 <input
@@ -612,7 +795,15 @@ export default function Settings({
                   inputMode="decimal"
                   value={formData.fuelEfficiency}
                   onChange={(e) => handleChange('fuelEfficiency', e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-[#161e31] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:border-emerald-500 focus:outline-none"
+                  onBlur={() => handleBlur('fuelEfficiency')}
+                  onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+                  className={`w-full bg-slate-50 dark:bg-[#161e31] border rounded-xl px-3 pr-12 py-2.5 text-slate-900 dark:text-white font-semibold text-sm mono-numbers focus:outline-none transition-all duration-200 ${
+                    savedFields.fuelEfficiency 
+                      ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20'
+                      : modifiedFields.fuelEfficiency
+                      ? 'border-amber-400 ring-2 ring-amber-400/20'
+                      : 'border-slate-200 dark:border-slate-700 focus:border-emerald-500'
+                  }`}
                 />
               </div>
             </div>
@@ -670,16 +861,39 @@ export default function Settings({
         </div>
 
         {/* Botão de Salvar Alterações */}
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-2">
           <button
             type="submit"
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all active:scale-95"
+            className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all active:scale-95 ${
+              savedSuccess 
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 ring-2 ring-emerald-400' 
+                : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white shadow-emerald-500/20'
+            }`}
           >
-            <Save className="w-4 h-4" />
-            Salvar Configurações
+            {savedSuccess ? (
+              <>
+                <Check className="w-4 h-4 stroke-[3]" />
+                Configurações Salvas com Sucesso!
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Salvar Configurações
+              </>
+            )}
           </button>
         </div>
       </form>
+
+      {/* Notificação Flutuante (Toast) visível em qualquer rolagem de tela */}
+      {savedSuccess && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-emerald-600 text-white text-xs sm:text-sm font-bold shadow-2xl shadow-emerald-600/40 border border-emerald-400 animate-fadeIn">
+          <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
+            <Check className="w-3.5 h-3.5 stroke-[3]" />
+          </div>
+          <span>Configurações salvas e sincronizadas!</span>
+        </div>
+      )}
 
       {/* Bloco 4: Backup, Exportação e Restauração */}
       <div className="bg-white dark:bg-[#111726] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-sm dark:shadow-xl space-y-4 transition-colors duration-200">
